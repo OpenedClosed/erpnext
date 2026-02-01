@@ -8,32 +8,25 @@ app_email = "hello@frappe.io"
 app_license = "GNU General Public License (v3)"
 source_link = "https://github.com/frappe/erpnext"
 app_logo_url = "/assets/erpnext/images/erpnext-logo.svg"
-app_home = "/desk"
 
-add_to_apps_screen = [
-	{
-		"name": app_name,
-		"logo": "/assets/erpnext/images/erpnext-logo.svg",
-		"title": app_title,
-		"route": app_home,
-		"has_permission": "erpnext.check_app_permission",
-	}
-]
 
-develop_version = "17.x.x-develop"
+# add_to_apps_screen = [
+# 	{
+# 		"name": "erpnext",
+# 		"logo": "/assets/erpnext/images/erpnext-logo-blue.png",
+# 		"title": "ERPNext",
+# 		"route": "/app/home",
+# 		"has_permission": "erpnext.check_app_permission",
+# 	}
+# ]
+
+develop_version = "15.x.x-develop"
 
 app_include_js = "erpnext.bundle.js"
 app_include_css = "erpnext.bundle.css"
+web_include_js = "erpnext-web.bundle.js"
 web_include_css = "erpnext-web.bundle.css"
 email_css = "email_erpnext.bundle.css"
-
-app_include_icons = [
-	"/assets/erpnext/icons/pos-icons.svg",
-]
-
-web_include_icons = [
-	"/assets/erpnext/icons/pos-icons.svg",
-]
 
 doctype_js = {
 	"Address": "public/js/address.js",
@@ -51,9 +44,7 @@ doctype_list_js = {
 	],
 }
 
-page_js = {"print": "public/js/print.js"}
-
-extend_doctype_class = {"Address": "erpnext.accounts.custom.address.ERPNextAddress"}
+override_doctype_class = {"Address": "erpnext.accounts.custom.address.ERPNextAddress"}
 
 override_whitelisted_methods = {"frappe.www.contact.send_message": "erpnext.templates.utils.send_message"}
 
@@ -65,6 +56,9 @@ setup_wizard_stages = "erpnext.setup.setup_wizard.setup_wizard.get_setup_stages"
 setup_wizard_complete = "erpnext.setup.setup_wizard.setup_wizard.setup_demo"
 setup_wizard_test = "erpnext.setup.setup_wizard.test_setup_wizard.run_setup_wizard_test"
 
+before_install = [
+	"erpnext.setup.install.check_frappe_version",
+]
 after_install = "erpnext.setup.install.after_install"
 
 boot_session = "erpnext.startup.boot.boot_session"
@@ -146,14 +140,6 @@ website_route_rules = [
 		},
 	},
 	{"from_route": "/purchase-orders", "to_route": "Purchase Order"},
-	{
-		"from_route": "/purchase-orders/<path:name>",
-		"to_route": "order",
-		"defaults": {
-			"doctype": "Purchase Order",
-			"parents": [{"label": "Purchase Order", "route": "purchase-orders"}],
-		},
-	},
 	{
 		"from_route": "/purchase-orders/<path:name>",
 		"to_route": "order",
@@ -287,10 +273,14 @@ standard_portal_menu_items = [
 	{"title": "Appointment Booking", "route": "/book_appointment"},
 ]
 
+default_roles = [
+	{"role": "Customer", "doctype": "Contact", "email_field": "email_id"},
+	{"role": "Supplier", "doctype": "Contact", "email_field": "email_id"},
+]
+
 sounds = [
 	{"name": "incoming-call", "src": "/assets/erpnext/sounds/incoming-call.mp3", "volume": 0.2},
 	{"name": "call-disconnect", "src": "/assets/erpnext/sounds/call-disconnect.mp3", "volume": 0.2},
-	{"name": "numpad-touch", "src": "/assets/erpnext/sounds/numpad-touch.mp3", "volume": 0.8},
 ]
 
 has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.has_upload_permission"}
@@ -350,7 +340,10 @@ doc_events = {
 	"User": {
 		"after_insert": "frappe.contacts.doctype.contact.contact.update_contact",
 		"validate": "erpnext.setup.doctype.employee.employee.validate_employee_role",
-		"on_update": "erpnext.portal.utils.set_default_role",
+		"on_update": [
+			"erpnext.setup.doctype.employee.employee.update_user_permissions",
+			"erpnext.portal.utils.set_default_role",
+		],
 	},
 	"Communication": {
 		"on_update": [
@@ -367,6 +360,7 @@ doc_events = {
 	},
 	"Sales Invoice": {
 		"on_submit": [
+			"erpnext.regional.create_transaction_log",
 			"erpnext.regional.italy.utils.sales_invoice_on_submit",
 		],
 		"on_cancel": [
@@ -381,6 +375,9 @@ doc_events = {
 		]
 	},
 	"Payment Entry": {
+		"on_submit": [
+			"erpnext.regional.create_transaction_log",
+		],
 		"on_trash": "erpnext.regional.check_deletion_permission",
 	},
 	"Address": {
@@ -402,10 +399,8 @@ doc_events = {
 }
 
 # function should expect the variable and doc as arguments
-naming_series_variables_list = ["FY", "TFY", "ABBR", "MM", "DD", "YY", "YYYY", "JJJ", "WW"]
 naming_series_variables = {
-	variable: "erpnext.accounts.utils.parse_naming_series_variable"
-	for variable in naming_series_variables_list
+	"FY": "erpnext.accounts.utils.parse_naming_series_variable",
 }
 
 # On cancel event Payment Entry will be exempted and all linked submittable doctype will get cancelled.
@@ -421,30 +416,28 @@ scheduler_events = {
 			"erpnext.manufacturing.doctype.bom_update_log.bom_update_log.resume_bom_cost_update_jobs",
 		],
 		"0/30 * * * *": [
-			"erpnext.stock.doctype.repost_item_valuation.repost_item_valuation.run_parallel_reposting",
+			"erpnext.utilities.doctype.video.video.update_youtube_data",
 		],
 		# Hourly but offset by 30 minutes
 		"30 * * * *": [
 			"erpnext.accounts.doctype.gl_entry.gl_entry.rename_gle_sle_docs",
 		],
 		# Daily but offset by 45 minutes
-		"45 0 * * *": [],
+		"45 0 * * *": [
+			"erpnext.stock.reorder_item.reorder_item",
+		],
 	},
 	"hourly": [
+		"erpnext.erpnext_integrations.doctype.plaid_settings.plaid_settings.automatic_synchronization",
+		"erpnext.projects.doctype.project.project.project_status_update_reminder",
 		"erpnext.projects.doctype.project.project.hourly_reminder",
+		"erpnext.projects.doctype.project.project.collect_project_status",
 	],
-	"hourly_long": [],
-	"hourly_maintenance": [
+	"hourly_long": [
 		"erpnext.stock.doctype.repost_item_valuation.repost_item_valuation.repost_entries",
 		"erpnext.utilities.bulk_transaction.retry",
-		"erpnext.projects.doctype.project.project.collect_project_status",
-		"erpnext.projects.doctype.project.project.project_status_update_reminder",
-		"erpnext.erpnext_integrations.doctype.plaid_settings.plaid_settings.automatic_synchronization",
-		"erpnext.utilities.doctype.video.video.update_youtube_data",
 	],
-	"daily": [],
-	"daily_long": [],
-	"daily_maintenance": [
+	"daily": [
 		"erpnext.support.doctype.issue.issue.auto_close_tickets",
 		"erpnext.crm.doctype.opportunity.opportunity.auto_close_opportunity",
 		"erpnext.controllers.accounts_controller.update_invoice_status",
@@ -468,15 +461,16 @@ scheduler_events = {
 		"erpnext.accounts.utils.auto_create_exchange_rate_revaluation_daily",
 		"erpnext.accounts.utils.run_ledger_health_checks",
 		"erpnext.assets.doctype.asset_maintenance_log.asset_maintenance_log.update_asset_maintenance_log_status",
-		"erpnext.stock.reorder_item.reorder_item",
+	],
+	"weekly": [
+		"erpnext.accounts.utils.auto_create_exchange_rate_revaluation_weekly",
+	],
+	"daily_long": [
 		"erpnext.accounts.doctype.process_subscription.process_subscription.create_subscription_process",
 		"erpnext.setup.doctype.email_digest.email_digest.send",
 		"erpnext.manufacturing.doctype.bom_update_tool.bom_update_tool.auto_update_latest_price_in_all_boms",
 		"erpnext.crm.utils.open_leads_opportunities_based_on_todays_event",
 		"erpnext.assets.doctype.asset.depreciation.post_depreciation_entries",
-	],
-	"weekly": [
-		"erpnext.accounts.utils.auto_create_exchange_rate_revaluation_weekly",
 	],
 	"monthly_long": [
 		"erpnext.accounts.deferred_revenue.process_deferred_accounting",
@@ -507,8 +501,7 @@ payment_gateway_enabled = "erpnext.accounts.utils.create_payment_gateway_account
 
 communication_doctypes = ["Customer", "Supplier"]
 
-advance_payment_receivable_doctypes = ["Sales Order"]
-advance_payment_payable_doctypes = ["Purchase Order"]
+advance_payment_doctypes = ["Sales Order", "Purchase Order"]
 
 invoice_doctypes = ["Sales Invoice", "Purchase Invoice"]
 
@@ -570,7 +563,6 @@ accounting_dimension_doctypes = [
 	"Payment Request",
 	"Asset Movement Item",
 	"Asset Depreciation Schedule",
-	"Advance Taxes and Charges",
 ]
 
 get_matching_queries = (
@@ -613,7 +605,6 @@ user_privacy_documents = [
 		"personal_fields": ["contact_mobile", "contact_display", "customer_name"],
 	},
 ]
-
 
 # ERPNext doctypes for Global Search
 global_search_doctypes = {
@@ -659,10 +650,6 @@ global_search_doctypes = {
 	],
 }
 
-ignore_links_on_delete = [
-	"Tax Withholding Entry",
-]
-
 additional_timeline_content = {"*": ["erpnext.telephony.doctype.call_log.call_log.get_linked_call_logs"]}
 
 
@@ -679,8 +666,3 @@ default_log_clearing_doctypes = {
 export_python_type_annotations = True
 
 fields_for_group_similar_items = ["qty", "amount"]
-
-# Translation
-# ------------
-# List of apps whose translatable strings should be excluded from this app's translations.
-ignore_translatable_strings_from = ["frappe"]

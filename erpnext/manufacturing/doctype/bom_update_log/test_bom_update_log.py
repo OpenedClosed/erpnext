@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from erpnext.manufacturing.doctype.bom_update_log.bom_update_log import (
 	BOMMissingError,
@@ -13,14 +13,14 @@ from erpnext.manufacturing.doctype.bom_update_tool.bom_update_tool import (
 	enqueue_update_cost,
 )
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["BOM"]
+test_records = frappe.get_test_records("BOM")
 
 
-class TestBOMUpdateLog(IntegrationTestCase):
+class TestBOMUpdateLog(FrappeTestCase):
 	"Test BOM Update Tool Operations via BOM Update Log."
 
 	def setUp(self):
-		bom_doc = frappe.copy_doc(self.globalTestRecords["BOM"][0])
+		bom_doc = frappe.copy_doc(test_records[0])
 		bom_doc.items[1].item_code = "_Test Item"
 		bom_doc.insert()
 

@@ -3,10 +3,11 @@
 
 
 import copy
+from collections import defaultdict
 
 import frappe
 from frappe import _
-from frappe.query_builder.functions import Sum
+from frappe.query_builder.functions import CombineDatetime, Sum
 from frappe.utils import cint, flt, get_datetime
 
 from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
@@ -545,10 +546,7 @@ def get_opening_balance_from_batch(filters, columns, sl_entries):
 
 	opening_data = frappe.get_all(
 		"Stock Ledger Entry",
-		fields=[
-			{"SUM": "actual_qty", "as": "qty_after_transaction"},
-			{"SUM": "stock_value_difference", "as": "stock_value"},
-		],
+		fields=["sum(actual_qty) as qty_after_transaction", "sum(stock_value_difference) as stock_value"],
 		filters=query_filters,
 	)[0]
 

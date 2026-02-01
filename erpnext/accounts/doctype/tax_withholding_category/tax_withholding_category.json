@@ -10,12 +10,10 @@
  "field_order": [
   "category_details_section",
   "category_name",
-  "tax_deduction_basis",
-  "column_break_2",
   "round_off_tax_amount",
+  "column_break_2",
+  "consider_party_ledger_amount",
   "tax_on_excess_amount",
-  "disable_cumulative_threshold",
-  "disable_transaction_threshold",
   "section_break_8",
   "rates",
   "section_break_7",
@@ -26,76 +24,80 @@
    "fieldname": "category_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Category Name"
+   "label": "Category Name",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "section_break_8",
    "fieldtype": "Section Break",
-   "label": "Tax Withholding Rates"
+   "label": "Tax Withholding Rates",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "rates",
    "fieldtype": "Table",
    "label": "Rates",
    "options": "Tax Withholding Rate",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "section_break_7",
    "fieldtype": "Section Break",
-   "label": "Account Details"
+   "label": "Account Details",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "accounts",
    "fieldtype": "Table",
    "label": "Accounts",
    "options": "Tax Withholding Account",
-   "reqd": 1
+   "reqd": 1,
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "category_details_section",
    "fieldtype": "Section Break",
-   "label": "Category Details"
+   "label": "Category Details",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
    "default": "0",
-   "description": "Tax withheld only for amount exceeding cumulative threshold",
+   "description": "Only payment entries with apply tax withholding unchecked will be considered for checking cumulative threshold breach",
+   "fieldname": "consider_party_ledger_amount",
+   "fieldtype": "Check",
+   "label": "Consider Entire Party Ledger Amount",
+   "show_days": 1,
+   "show_seconds": 1
+  },
+  {
+   "default": "0",
+   "description": "Tax will be withheld only for amount exceeding the cumulative threshold",
    "fieldname": "tax_on_excess_amount",
    "fieldtype": "Check",
-   "label": "Only Deduct Tax On Excess Amount "
+   "label": "Only Deduct Tax On Excess Amount ",
+   "show_days": 1,
+   "show_seconds": 1
   },
   {
-   "default": "0",
    "description": "Checking this will round off the tax amount to the nearest integer",
    "fieldname": "round_off_tax_amount",
    "fieldtype": "Check",
-   "label": "Round Off Tax Amount"
-  },
-  {
-   "default": "Net Total",
-   "fieldname": "tax_deduction_basis",
-   "fieldtype": "Select",
-   "label": "Deduct Tax On Basis",
-   "options": "\nGross Total\nNet Total",
-   "reqd": 1
-  },
-  {
-   "default": "0",
-   "description": "When checked, only transaction threshold will be applied for transaction individually",
-   "fieldname": "disable_cumulative_threshold",
-   "fieldtype": "Check",
-   "label": "Disable Cumulative Threshold"
-  },
-  {
-   "default": "0",
-   "description": "When checked, only cumulative threshold will be applied",
-   "fieldname": "disable_transaction_threshold",
-   "fieldtype": "Check",
-   "label": "Disable Transaction Threshold"
+   "label": "Round Off Tax Amount",
+   "show_days": 1,
+   "show_seconds": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -144,9 +146,7 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
  "track_changes": 1
 }

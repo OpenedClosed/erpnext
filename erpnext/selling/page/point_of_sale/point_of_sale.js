@@ -5,7 +5,6 @@ frappe.pages["point-of-sale"].on_page_load = function (wrapper) {
 		parent: wrapper,
 		title: __("Point of Sale"),
 		single_column: true,
-		hide_sidebar: true,
 	});
 
 	frappe.require("point-of-sale.bundle.js", function () {

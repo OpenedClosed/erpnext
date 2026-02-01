@@ -2,6 +2,9 @@
 # License: GNU General Public License v3. See license.txt
 
 
+import copy
+from collections import OrderedDict
+
 import frappe
 from frappe import _, _dict
 from frappe.query_builder import Criterion
@@ -15,15 +18,6 @@ from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
 from erpnext.accounts.report.financial_statements import get_cost_centers_with_children
 from erpnext.accounts.report.utils import convert_to_presentation_currency, get_currency
 from erpnext.accounts.utils import get_account_currency
-
-DEBIT_CREDIT_DICT = {
-	"debit": 0.0,
-	"credit": 0.0,
-	"debit_in_account_currency": 0.0,
-	"credit_in_account_currency": 0.0,
-	"debit_in_transaction_currency": None,
-	"credit_in_transaction_currency": None,
-}
 
 
 def execute(filters=None):
@@ -163,7 +157,7 @@ def get_gl_entries(filters, accounting_dimensions):
 		credit_in_account_currency """
 
 	if filters.get("show_remarks"):
-		if remarks_length := frappe.get_single_value("Accounts Settings", "general_ledger_remarks_length"):
+		if remarks_length := frappe.db.get_single_value("Accounts Settings", "general_ledger_remarks_length"):
 			select_fields += f",substr(remarks, 1, {remarks_length}) as 'remarks'"
 		else:
 			select_fields += """,remarks"""
@@ -224,7 +218,9 @@ def get_gl_entries(filters, accounting_dimensions):
 def get_conditions(filters):
 	conditions = []
 
-	ignore_is_opening = frappe.get_single_value("Accounts Settings", "ignore_is_opening_check_for_reporting")
+	ignore_is_opening = frappe.db.get_single_value(
+		"Accounts Settings", "ignore_is_opening_check_for_reporting"
+	)
 
 	if filters.get("account"):
 		filters.account = get_accounts_with_children(filters.account)
@@ -389,83 +385,75 @@ def set_bill_no(gl_entries):
 		gl["bill_no"] = inv_details.get(gl.get("against_voucher"), "")
 
 
-def get_translated_labels_for_totals():
-	def wrap_in_quotes(label):
-		return f"'{label}'"
-
-	return {
-		"opening": wrap_in_quotes(_("Opening")),
-		"total": wrap_in_quotes(_("Total")),
-		"closing": wrap_in_quotes(_("Closing (Opening + Total)")),
-	}
-
-
 def get_data_with_opening_closing(filters, account_details, accounting_dimensions, gl_entries):
-	def add_total_to_data(totals, key):
-		row = totals[key]
-		row["account"] = labels[key]
-		data.append(row)
-
-	labels = get_translated_labels_for_totals()
-
 	data = []
+	totals_dict = get_totals_dict()
 
 	set_bill_no(gl_entries)
 
-	gle_map = initialize_gle_map(gl_entries, filters)
+	gle_map = initialize_gle_map(gl_entries, filters, totals_dict)
 
-	totals, entries = get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map)
+	totals, entries = get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map, totals_dict)
 
 	# Opening for filtered account
-	add_total_to_data(totals, "opening")
+	data.append(totals.opening)
 
 	if filters.get("categorize_by") != "Categorize by Voucher (Consolidated)":
-		set_opening_closing = (not filters.get("categorize_by") and not filters.get("voucher_no")) or (
-			filters.get("categorize_by") and filters.get("categorize_by") != "Categorize by Voucher"
-		)
-		set_total = filters.get("categorize_by") or not filters.voucher_no
+		for _acc, acc_dict in gle_map.items():
+			# acc
+			if acc_dict.entries:
+				# opening
+				data.append({"debit_in_transaction_currency": None, "credit_in_transaction_currency": None})
+				if (not filters.get("categorize_by") and not filters.get("voucher_no")) or (
+					filters.get("categorize_by") and filters.get("categorize_by") != "Categorize by Voucher"
+				):
+					data.append(acc_dict.totals.opening)
 
-		for acc_dict in gle_map.values():
-			if not acc_dict.entries:
-				continue
+				data += acc_dict.entries
 
-			# opening
-			data.append({"debit_in_transaction_currency": None, "credit_in_transaction_currency": None})
-			if set_opening_closing:
-				add_total_to_data(acc_dict.totals, "opening")
+				# totals
+				if filters.get("categorize_by") or not filters.voucher_no:
+					data.append(acc_dict.totals.total)
 
-			data += acc_dict.entries
-
-			# totals
-			if set_total:
-				add_total_to_data(acc_dict.totals, "total")
-
-			# closing
-			if set_opening_closing:
-				add_total_to_data(acc_dict.totals, "closing")
+				# closing
+				if (not filters.get("categorize_by") and not filters.get("voucher_no")) or (
+					filters.get("categorize_by") and filters.get("categorize_by") != "Categorize by Voucher"
+				):
+					data.append(acc_dict.totals.closing)
 
 		data.append({"debit_in_transaction_currency": None, "credit_in_transaction_currency": None})
 	else:
 		data += entries
 
 	# totals
-	add_total_to_data(totals, "total")
+	data.append(totals.total)
 
 	# closing
-	add_total_to_data(totals, "closing")
+	data.append(totals.closing)
 
 	return data
 
 
 def get_totals_dict():
+	def _get_debit_credit_dict(label):
+		return _dict(
+			account=f"'{label}'",
+			debit=0.0,
+			credit=0.0,
+			debit_in_account_currency=0.0,
+			credit_in_account_currency=0.0,
+			debit_in_transaction_currency=None,
+			credit_in_transaction_currency=None,
+		)
+
 	return _dict(
-		opening=_dict(DEBIT_CREDIT_DICT),
-		total=_dict(DEBIT_CREDIT_DICT),
-		closing=_dict(DEBIT_CREDIT_DICT),
+		opening=_get_debit_credit_dict(_("Opening")),
+		total=_get_debit_credit_dict(_("Total")),
+		closing=_get_debit_credit_dict(_("Closing (Opening + Total)")),
 	)
 
 
-def get_group_by_field(group_by):
+def group_by_field(group_by):
 	if group_by == "Categorize by Party":
 		return "party"
 	elif group_by in ["Categorize by Voucher (Consolidated)", "Categorize by Account"]:
@@ -474,33 +462,27 @@ def get_group_by_field(group_by):
 		return "voucher_no"
 
 
-def initialize_gle_map(gl_entries, filters):
-	gle_map = {}
-	group_by = get_group_by_field(filters.get("categorize_by"))
+def initialize_gle_map(gl_entries, filters, totals_dict):
+	gle_map = OrderedDict()
+	group_by = group_by_field(filters.get("categorize_by"))
 
 	for gle in gl_entries:
-		group_by_value = gle.get(group_by)
-		if group_by_value not in gle_map:
-			gle_map[group_by_value] = _dict(
-				totals=get_totals_dict(),
-				entries=[],
-			)
-
+		gle_map.setdefault(gle.get(group_by), _dict(totals=copy.deepcopy(totals_dict), entries=[]))
 	return gle_map
 
 
-def get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map):
+def get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map, totals):
 	entries = []
-	consolidated_gle = {}
-	group_by = get_group_by_field(filters.get("categorize_by"))
+	consolidated_gle = OrderedDict()
+	group_by = group_by_field(filters.get("categorize_by"))
 	group_by_voucher_consolidated = filters.get("categorize_by") == "Categorize by Voucher (Consolidated)"
 
 	if filters.get("show_net_values_in_party_account"):
 		account_type_map = get_account_type_map(filters.get("company"))
 
-	immutable_ledger = frappe.get_single_value("Accounts Settings", "enable_immutable_ledger")
+	immutable_ledger = frappe.db.get_single_value("Accounts Settings", "enable_immutable_ledger")
 
-	def update_value_in_dict(data, key, gle, show_net_values=False):
+	def update_value_in_dict(data, key, gle):
 		data[key].debit += gle.debit
 		data[key].credit += gle.credit
 
@@ -511,14 +493,10 @@ def get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map):
 			data[key].debit_in_transaction_currency += gle.debit_in_transaction_currency
 			data[key].credit_in_transaction_currency += gle.credit_in_transaction_currency
 
-		if (
-			filters.get("show_net_values_in_party_account")
-			and account_type_map.get(data[key].account)
-			in (
-				"Receivable",
-				"Payable",
-			)
-		) or show_net_values:
+		if filters.get("show_net_values_in_party_account") and account_type_map.get(data[key].account) in (
+			"Receivable",
+			"Payable",
+		):
 			net_value = data[key].debit - data[key].credit
 			net_value_in_account_currency = (
 				data[key].debit_in_account_currency - data[key].credit_in_account_currency
@@ -542,21 +520,17 @@ def get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map):
 	from_date, to_date = getdate(filters.from_date), getdate(filters.to_date)
 	show_opening_entries = filters.get("show_opening_entries")
 
-	totals = get_totals_dict()
 	for gle in gl_entries:
 		group_by_value = gle.get(group_by)
-		gle.voucher_subtype = _(gle.voucher_subtype)
-		gle.against_voucher_type = _(gle.against_voucher_type)
-		gle.remarks = _(gle.remarks)
-		gle.party_type = _(gle.party_type)
+		gle.voucher_type = gle.voucher_type
 
 		if gle.posting_date < from_date or (cstr(gle.is_opening) == "Yes" and not show_opening_entries):
 			if not group_by_voucher_consolidated:
-				update_value_in_dict(gle_map[group_by_value].totals, "opening", gle, True)
-				update_value_in_dict(gle_map[group_by_value].totals, "closing", gle, True)
+				update_value_in_dict(gle_map[group_by_value].totals, "opening", gle)
+				update_value_in_dict(gle_map[group_by_value].totals, "closing", gle)
 
-			update_value_in_dict(totals, "opening", gle, True)
-			update_value_in_dict(totals, "closing", gle, True)
+			update_value_in_dict(totals, "opening", gle)
+			update_value_in_dict(totals, "closing", gle)
 
 		elif gle.posting_date <= to_date or (cstr(gle.is_opening) == "Yes" and show_opening_entries):
 			if not group_by_voucher_consolidated:
@@ -591,13 +565,6 @@ def get_accountwise_gle(filters, accounting_dimensions, gl_entries, gle_map):
 					consolidated_gle.setdefault(key, gle)
 				else:
 					update_value_in_dict(consolidated_gle, key, gle)
-
-		if filters.get("include_dimensions"):
-			dimensions = [*accounting_dimensions, "cost_center", "project"]
-
-			for dimension in dimensions:
-				if val := gle.get(dimension):
-					gle[dimension] = _(val)
 
 	for value in consolidated_gle.values():
 		update_value_in_dict(totals, "total", value)

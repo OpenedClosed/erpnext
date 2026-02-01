@@ -41,9 +41,7 @@ frappe.ui.form.on("Repost Item Valuation", {
 			});
 		}
 
-		if (frm.doc.status !== "Completed") {
-			frm.trigger("setup_realtime_progress");
-		}
+		frm.trigger("setup_realtime_progress");
 	},
 
 	based_on: function (frm) {
@@ -86,9 +84,7 @@ frappe.ui.form.on("Repost Item Valuation", {
 			}).addClass("btn-primary");
 		}
 
-		if (frm.doc.status !== "Completed") {
-			frm.trigger("show_reposting_progress");
-		}
+		frm.trigger("show_reposting_progress");
 
 		if (frm.doc.status === "Queued" && frm.doc.docstatus === 1) {
 			frm.trigger("execute_reposting");

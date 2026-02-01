@@ -52,7 +52,6 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Company Account",
-   "mandatory_depends_on": "is_company_account",
    "options": "Account"
   },
   {
@@ -99,7 +98,6 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Company",
-   "mandatory_depends_on": "is_company_account",
    "options": "Company"
   },
   {
@@ -134,8 +132,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IBAN",
-   "length": 34,
-   "options": "IBAN"
+   "length": 30
   },
   {
    "fieldname": "column_break_12",
@@ -211,7 +208,6 @@
    "label": "Disabled"
   }
  ],
- "grid_page_length": 50,
  "links": [
   {
    "group": "Transactions",
@@ -254,7 +250,7 @@
    "link_fieldname": "default_bank_account"
   }
  ],
- "modified": "2026-01-20 00:46:16.633364",
+ "modified": "2024-10-30 09:41:14.113414",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Bank Account",
@@ -286,9 +282,8 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
  "search_fields": "bank,account",
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

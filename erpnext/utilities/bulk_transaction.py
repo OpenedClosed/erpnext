@@ -7,7 +7,7 @@ from frappe.utils import get_link_to_form, today
 
 
 @frappe.whitelist()
-def transaction_processing(data, from_doctype, to_doctype, args=None):
+def transaction_processing(data, from_doctype, to_doctype):
 	frappe.has_permission(from_doctype, "read", throw=True)
 	frappe.has_permission(to_doctype, "create", throw=True)
 
@@ -16,39 +16,14 @@ def transaction_processing(data, from_doctype, to_doctype, args=None):
 	else:
 		deserialized_data = data
 
-	if isinstance(args, str):
-		args = frappe._dict(json.loads(args))
-
-	skipped_records = [d for d in deserialized_data if d.get("status") in ("On Hold", "Closed")]
-
-	deserialized_data = [d for d in deserialized_data if d.get("status") not in ("On Hold", "Closed")]
-
 	length_of_data = len(deserialized_data)
 
-	skipped_msg = ""
-
-	if skipped_records:
-		skipped_msg = _("{0} creation for the following records will be skipped.").format(to_doctype)
-
-		skipped_msg += (
-			"<br><br><ul>"
-			+ "".join(_("<li>{}</li>").format(frappe.bold(row.get("name"))) for row in skipped_records)
-			+ "</ul>"
-		)
-
-	if not length_of_data:
-		frappe.msgprint(skipped_msg)
-		return
-
-	frappe.msgprint(
-		_("Started a background job to create {1} {0}. {2}").format(to_doctype, length_of_data, skipped_msg)
-	)
+	frappe.msgprint(_("Started a background job to create {1} {0}").format(to_doctype, length_of_data))
 	frappe.enqueue(
 		job,
 		deserialized_data=deserialized_data,
 		from_doctype=from_doctype,
 		to_doctype=to_doctype,
-		args=args,
 	)
 
 
@@ -97,13 +72,8 @@ def update_log(log_name, status, retried, err=None):
 		frappe.db.set_value("Bulk Transaction Log Detail", log_name, "error_description", err)
 
 
-def job(deserialized_data, from_doctype, to_doctype, args):
+def job(deserialized_data, from_doctype, to_doctype):
 	fail_count = 0
-
-	if args:
-		# currently: flag-based transport to `task`
-		frappe.flags.args = args
-
 	for d in deserialized_data:
 		try:
 			doc_name = d.get("name")
@@ -181,12 +151,9 @@ def task(doc_name, from_doctype, to_doctype):
 	else:
 		obj = mapper[from_doctype][to_doctype](doc_name)
 
-	if obj:
-		obj.flags.ignore_validate = True
-		obj.set_title_field()
-		obj.insert(ignore_mandatory=True)
-
-	del obj
+	obj.flags.ignore_validate = True
+	obj.set_title_field()
+	obj.insert(ignore_mandatory=True)
 	del frappe.flags.bulk_transaction
 
 

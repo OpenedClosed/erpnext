@@ -83,7 +83,7 @@ class AccountingDimension(Document):
 				frappe.throw(_("Company {0} is added more than once").format(frappe.bold(default.company)))
 
 	def after_insert(self):
-		if frappe.in_test:
+		if frappe.flags.in_test:
 			make_dimension_in_accounting_doctypes(doc=self)
 		else:
 			frappe.enqueue(
@@ -91,7 +91,7 @@ class AccountingDimension(Document):
 			)
 
 	def on_trash(self):
-		if frappe.in_test:
+		if frappe.flags.in_test:
 			delete_accounting_dimension(doc=self)
 		else:
 			frappe.enqueue(delete_accounting_dimension, doc=self, queue="long", enqueue_after_commit=True)
@@ -211,7 +211,7 @@ def delete_accounting_dimension(doc):
 
 @frappe.whitelist()
 def disable_dimension(doc):
-	if frappe.in_test:
+	if frappe.flags.in_test:
 		toggle_disabling(doc=doc)
 	else:
 		frappe.enqueue(toggle_disabling, doc=doc)
@@ -309,8 +309,8 @@ def get_dimensions(with_cost_center_and_project=False):
 	if with_cost_center_and_project:
 		dimension_filters.extend(
 			[
-				frappe._dict({"fieldname": "cost_center", "document_type": "Cost Center"}),
-				frappe._dict({"fieldname": "project", "document_type": "Project"}),
+				{"fieldname": "cost_center", "document_type": "Cost Center"},
+				{"fieldname": "project", "document_type": "Project"},
 			]
 		)
 

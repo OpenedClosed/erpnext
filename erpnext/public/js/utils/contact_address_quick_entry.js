@@ -16,14 +16,11 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 	insert() {
 		/**
 		 * Using alias fieldnames because the doctype definition define "email_id" and "mobile_no" as readonly fields.
-		 * This results in the fields being "hidden".
+		 * Therefor, resulting in the fields being "hidden".
 		 */
 		const map_field_names = {
 			email_address: "email_id",
 			mobile_number: "mobile_no",
-			map_to_first_name: "first_name",
-			map_to_last_name: "last_name",
-			country_address: "country",
 		};
 
 		Object.entries(map_field_names).forEach(([fieldname, new_fieldname]) => {
@@ -42,26 +39,13 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 				collapsible: 1,
 			},
 			{
-				label: __("First Name"),
-				fieldname: "map_to_first_name",
-				fieldtype: "Data",
-				depends_on: "eval:doc.customer_type=='Company' || doc.supplier_type=='Company'",
-			},
-			{
-				label: __("Last Name"),
-				fieldname: "map_to_last_name",
-				fieldtype: "Data",
-				depends_on: "eval:doc.customer_type=='Company' || doc.supplier_type=='Company'",
-			},
-
-			{
-				fieldtype: "Column Break",
-			},
-			{
 				label: __("Email Id"),
 				fieldname: "email_address",
 				fieldtype: "Data",
 				options: "Email",
+			},
+			{
+				fieldtype: "Column Break",
 			},
 			{
 				label: __("Mobile Number"),
@@ -77,7 +61,6 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 				label: __("Address Line 1"),
 				fieldname: "address_line1",
 				fieldtype: "Data",
-				mandatory_depends_on: "eval:doc.city || doc.country_address",
 			},
 			{
 				label: __("Address Line 2"),
@@ -96,7 +79,6 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 				label: __("City"),
 				fieldname: "city",
 				fieldtype: "Data",
-				mandatory_depends_on: "eval:doc.country_address || doc.address_line1",
 			},
 			{
 				label: __("State/Province"),
@@ -105,10 +87,9 @@ frappe.ui.form.ContactAddressQuickEntryForm = class ContactAddressQuickEntryForm
 			},
 			{
 				label: __("Country"),
-				fieldname: "country_address",
+				fieldname: "country",
 				fieldtype: "Link",
 				options: "Country",
-				mandatory_depends_on: "eval:doc.city || doc.address_line1",
 			},
 			{
 				label: __("Customer POS Id"),

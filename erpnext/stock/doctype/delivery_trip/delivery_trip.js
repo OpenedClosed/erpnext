@@ -61,6 +61,7 @@ frappe.ui.form.on("Delivery Trip", {
 							customer: null,
 						},
 						get_query_filters: {
+							docstatus: 1,
 							company: frm.doc.company,
 							status: ["Not In", ["Completed", "Cancelled"]],
 						},
@@ -208,12 +209,7 @@ frappe.ui.form.on("Delivery Stop", {
 				args: { address_dict: row.address },
 				callback: function (r) {
 					if (r.message) {
-						frappe.model.set_value(
-							cdt,
-							cdn,
-							"customer_address",
-							frappe.utils.html2text(r.message)
-						);
+						frappe.model.set_value(cdt, cdn, "customer_address", r.message);
 					}
 				},
 			});

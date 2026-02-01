@@ -18,41 +18,16 @@ def execute(filters=None):
 
 def get_data(filters):
 	data = get_stock_ledger_entries(filters)
-	bundles = get_bundles(data)
-	serial_nos_data = prepare_serial_nos(data, bundles)
+	serial_nos_data = prepare_serial_nos(data)
 	data = get_incorrect_serial_nos(serial_nos_data)
 
 	return data
 
 
-def get_bundles(data):
-	bundles = [d.serial_and_batch_bundle for d in data if d.serial_and_batch_bundle]
-	bundle_dict = frappe._dict()
-	serial_nos_data = frappe.get_all(
-		"Serial and Batch Entry",
-		fields=["parent", "serial_no", "incoming_rate", "qty"],
-		filters={"parent": ("in", bundles), "serial_no": ("is", "set")},
-	)
-
-	for entry in serial_nos_data:
-		bundle_dict.setdefault(entry.parent, []).append(entry)
-
-	return bundle_dict
-
-
-def prepare_serial_nos(data, bundles):
+def prepare_serial_nos(data):
 	serial_no_wise_data = {}
 	for row in data:
-		if not row.serial_nos and not row.serial_and_batch_bundle:
-			continue
-
-		if row.serial_and_batch_bundle:
-			for bundle in bundles.get(row.serial_and_batch_bundle, []):
-				sle = copy.deepcopy(row)
-				sle.serial_no = bundle.serial_no
-				sle.qty = bundle.qty
-				sle.valuation_rate = bundle.incoming_rate * (1 if sle.qty > 0 else -1)
-				serial_no_wise_data.setdefault(bundle.serial_no, []).append(sle)
+		if not row.serial_nos:
 			continue
 
 		for serial_no in get_serial_nos(row.serial_nos):
@@ -78,9 +53,6 @@ def get_incorrect_serial_nos(serial_nos_data):
 
 			total_value.qty += total_dict.qty
 			total_value.valuation_rate += total_dict.valuation_rate
-
-			if total_dict.qty == 0 and abs(total_dict.valuation_rate) == 0:
-				continue
 
 			result.append(total_dict)
 			result.append({})
@@ -109,17 +81,15 @@ def get_stock_ledger_entries(report_filters):
 		"voucher_no",
 		"item_code",
 		"serial_no as serial_nos",
-		"serial_and_batch_bundle",
 		"actual_qty",
 		"posting_date",
 		"posting_time",
 		"company",
 		"warehouse",
-		{"DIV": ["stock_value_difference", "actual_qty"], "as": "valuation_rate"},
+		"(stock_value_difference / actual_qty) as valuation_rate",
 	]
 
-	filters = {"is_cancelled": 0}
-	or_filters = {"serial_no": ("is", "set"), "serial_and_batch_bundle": ("is", "set")}
+	filters = {"serial_no": ("is", "set"), "is_cancelled": 0}
 
 	if report_filters.get("item_code"):
 		filters["item_code"] = report_filters.get("item_code")
@@ -134,7 +104,6 @@ def get_stock_ledger_entries(report_filters):
 		"Stock Ledger Entry",
 		fields=fields,
 		filters=filters,
-		or_filters=or_filters,
 		order_by="posting_date asc, posting_time asc, creation asc",
 	)
 

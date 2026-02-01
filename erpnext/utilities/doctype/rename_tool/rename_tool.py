@@ -7,7 +7,6 @@
 import frappe
 from frappe.model.document import Document
 from frappe.model.rename_doc import bulk_rename
-from frappe.utils.deprecations import deprecated
 
 
 class RenameTool(Document):
@@ -20,14 +19,13 @@ class RenameTool(Document):
 		from frappe.types import DF
 
 		file_to_rename: DF.Attach | None
-		select_doctype: DF.Link | None
+		select_doctype: DF.Literal
 	# end: auto-generated types
 
 	pass
 
 
 @frappe.whitelist()
-@deprecated
 def get_doctypes():
 	return frappe.db.sql_list(
 		"""select name from tabDocType

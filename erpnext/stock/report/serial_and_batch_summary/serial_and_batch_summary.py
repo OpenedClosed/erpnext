@@ -19,7 +19,7 @@ def get_data(filters):
 		"Serial and Batch Bundle",
 		fields=[
 			"`tabSerial and Batch Bundle`.`voucher_type`",
-			"`tabSerial and Batch Bundle`.`posting_datetime` as posting_date",
+			"`tabSerial and Batch Bundle`.`posting_date`",
 			"`tabSerial and Batch Bundle`.`name`",
 			"`tabSerial and Batch Bundle`.`company`",
 			"`tabSerial and Batch Bundle`.`voucher_no`",
@@ -33,7 +33,7 @@ def get_data(filters):
 			"`tabSerial and Batch Entry`.`qty`",
 		],
 		filters=filter_conditions,
-		order_by="posting_datetime",
+		order_by="posting_date",
 	)
 
 
@@ -54,7 +54,7 @@ def get_filter_conditions(filters):
 		filter_conditions.append(
 			[
 				"Serial and Batch Bundle",
-				"posting_datetime",
+				"posting_date",
 				"between",
 				[filters.get("from_date"), filters.get("to_date")],
 			]
@@ -144,15 +144,7 @@ def get_columns(filters, data):
 		)
 
 	if not item_details or item_details.get("has_serial_no"):
-		columns.append(
-			{
-				"label": _("Serial No"),
-				"fieldname": "serial_no",
-				"fieldtype": "Link",
-				"width": 120,
-				"options": "Serial No",
-			}
-		)
+		columns.append({"label": _("Serial No"), "fieldname": "serial_no", "fieldtype": "Data", "width": 120})
 
 	if not item_details or item_details.get("has_batch_no"):
 		columns.extend(
@@ -183,15 +175,14 @@ def get_voucher_type(doctype, txt, searchfield, start, page_len, filters):
 	child_doctypes = frappe.get_all(
 		"DocField",
 		filters={"fieldname": "serial_and_batch_bundle"},
-		fields=["parent"],
-		distinct=True,
+		fields=["distinct parent as parent"],
 	)
 
 	query_filters = {"options": ["in", [d.parent for d in child_doctypes]]}
 	if txt:
 		query_filters["parent"] = ["like", f"%{txt}%"]
 
-	return frappe.get_all("DocField", filters=query_filters, fields=["parent"], as_list=True, distinct=True)
+	return frappe.get_all("DocField", filters=query_filters, fields=["distinct parent"], as_list=True)
 
 
 @frappe.whitelist()

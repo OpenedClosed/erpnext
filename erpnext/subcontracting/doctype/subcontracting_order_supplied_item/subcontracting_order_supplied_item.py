@@ -28,7 +28,6 @@ class SubcontractingOrderSuppliedItem(Document):
 		reserve_warehouse: DF.Link | None
 		returned_qty: DF.Float
 		rm_item_code: DF.Link | None
-		stock_reserved_qty: DF.Float
 		stock_uom: DF.Link | None
 		supplied_qty: DF.Float
 		total_supplied_qty: DF.Float

@@ -6,6 +6,7 @@ from frappe.model.naming import set_name_by_naming_series
 from frappe.permissions import (
 	add_user_permission,
 	get_doc_permissions,
+	has_permission,
 	remove_user_permission,
 )
 from frappe.utils import cstr, getdate, today, validate_email_address
@@ -87,6 +88,9 @@ class Employee(NestedSet):
 		if not self.has_value_changed("user_id") and not self.has_value_changed("create_user_permission"):
 			return
 
+		if not has_permission("User Permission", ptype="write", raise_exception=False):
+			return
+
 		employee_user_permission_exists = frappe.db.exists(
 			"User Permission", {"allow": "Employee", "for_value": self.name, "user": self.user_id}
 		)
@@ -124,7 +128,7 @@ class Employee(NestedSet):
 			user.gender = self.gender
 
 		if self.image:
-			if not user.user_image or self.has_value_changed("image"):
+			if not user.user_image:
 				user.user_image = self.image
 				try:
 					frappe.get_doc(
@@ -183,7 +187,7 @@ class Employee(NestedSet):
 				throw(_("Please enter relieving date."))
 
 	def validate_for_enabled_user_id(self, enabled):
-		if self.status != "Active":
+		if not self.status == "Active":
 			return
 
 		if enabled is None:
@@ -247,17 +251,22 @@ def validate_employee_role(doc, method=None, ignore_emp_check=False):
 		doc.get("roles").remove(doc.get("roles", {"role": "Employee Self Service"})[0])
 
 
+def update_user_permissions(doc, method):
+	# called via User hook
+	if "Employee" in [d.role for d in doc.get("roles")]:
+		if not has_permission("User Permission", ptype="write", raise_exception=False):
+			return
+		employee = frappe.get_doc("Employee", {"user_id": doc.name})
+		employee.update_user_permissions()
+
+
 def get_employee_email(employee_doc):
 	return (
 		employee_doc.get("user_id") or employee_doc.get("personal_email") or employee_doc.get("company_email")
 	)
 
 
-def get_holiday_list_for_employee(employee, raise_exception=True, as_on=None):
-	hrms_override = frappe.get_hooks("employee_holiday_list")
-
-	if hrms_override:
-		return frappe.get_attr(hrms_override[-1])(employee, raise_exception, as_on)
+def get_holiday_list_for_employee(employee, raise_exception=True):
 	if employee:
 		holiday_list, company = frappe.get_cached_value("Employee", employee, ["holiday_list", "company"])
 	else:

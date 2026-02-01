@@ -4,8 +4,6 @@
 frappe.ui.form.on("Period Closing Voucher", {
 	onload: function (frm) {
 		if (!frm.doc.transaction_date) frm.doc.transaction_date = frappe.datetime.obj_to_str(new Date());
-
-		frm.ignore_doctypes_on_cancel_all = ["Process Period Closing Voucher"];
 	},
 
 	setup: function (frm) {
@@ -13,9 +11,9 @@ frappe.ui.form.on("Period Closing Voucher", {
 			return {
 				filters: [
 					["Account", "company", "=", frm.doc.company],
-					["Account", "is_group", "=", 0],
+					["Account", "is_group", "=", "0"],
 					["Account", "freeze_account", "=", "No"],
-					["Account", "root_type", "in", ["Liability", "Equity"]],
+					["Account", "root_type", "in", "Liability, Equity"],
 				],
 			};
 		});

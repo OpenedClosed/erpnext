@@ -15,7 +15,6 @@ class JobCardItem(Document):
 		from frappe.types import DF
 
 		allow_alternative_item: DF.Check
-		consumed_qty: DF.Float
 		description: DF.Text | None
 		item_code: DF.Link | None
 		item_group: DF.Link | None

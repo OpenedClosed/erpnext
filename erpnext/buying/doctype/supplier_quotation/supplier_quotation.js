@@ -16,14 +16,6 @@ erpnext.buying.SupplierQuotationController = class SupplierQuotationController e
 			return !doc.qty && me.frm.doc.has_unit_price_items ? "yellow" : "";
 		});
 
-		this.frm.set_query("warehouse", "items", (doc, cdt, cdn) => {
-			return {
-				filters: {
-					company: doc.company,
-					is_group: 0,
-				},
-			};
-		});
 		super.setup();
 	}
 
@@ -35,20 +27,9 @@ erpnext.buying.SupplierQuotationController = class SupplierQuotationController e
 			this.frm.set_value("valid_till", frappe.datetime.add_months(this.frm.doc.transaction_date, 1));
 		}
 		if (this.frm.doc.docstatus === 1) {
-			this.frm.add_custom_button(
-				__("Purchase Order"),
-				this.make_purchase_order.bind(this),
-				__("Create")
-			);
-			this.frm.add_custom_button(__("Update Items"), () => {
-				erpnext.utils.update_child_items({
-					frm: this.frm,
-					child_docname: "items",
-					cannot_add_row: false,
-				});
-			});
-			this.frm.page.set_inner_btn_group_as_primary(__("Create"));
-			this.frm.add_custom_button(__("Quotation"), this.make_quotation.bind(this), __("Create"));
+			cur_frm.add_custom_button(__("Purchase Order"), this.make_purchase_order, __("Create"));
+			cur_frm.page.set_inner_btn_group_as_primary(__("Create"));
+			cur_frm.add_custom_button(__("Quotation"), this.make_quotation, __("Create"));
 		} else if (this.frm.doc.docstatus === 0) {
 			erpnext.set_unit_price_items_note(this.frm);
 
@@ -113,13 +94,13 @@ erpnext.buying.SupplierQuotationController = class SupplierQuotationController e
 	make_purchase_order() {
 		frappe.model.open_mapped_doc({
 			method: "erpnext.buying.doctype.supplier_quotation.supplier_quotation.make_purchase_order",
-			frm: this.frm,
+			frm: cur_frm,
 		});
 	}
 	make_quotation() {
 		frappe.model.open_mapped_doc({
 			method: "erpnext.buying.doctype.supplier_quotation.supplier_quotation.make_quotation",
-			frm: this.frm,
+			frm: cur_frm,
 		});
 	}
 };

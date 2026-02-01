@@ -162,6 +162,8 @@ class EmailDigest(Document):
 				context.purchase_order_list,
 				context.purchase_orders_items_overdue_list,
 			) = self.get_purchase_orders_items_overdue_list()
+			if not context.purchase_order_list:
+				frappe.throw(_("No items to be received are overdue"))
 
 		if not context:
 			return None
@@ -269,7 +271,7 @@ class EmailDigest(Document):
 		issue_list = frappe.db.sql(
 			"""select *
 			from `tabIssue` where status in ("Replied","Open")
-			order by creation asc limit 10""",
+			order by modified asc limit 10""",
 			as_dict=True,
 		)
 
@@ -293,7 +295,7 @@ class EmailDigest(Document):
 		project_list = frappe.db.sql(
 			"""select *
 			from `tabProject` where status='Open' and project_type='External'
-			order by creation asc limit 10""",
+			order by modified asc limit 10""",
 			as_dict=True,
 		)
 
@@ -797,7 +799,7 @@ class EmailDigest(Document):
 				"status": ["not in", ("Cancelled")],
 				"company": self.company,
 			},
-			fields=[{"COUNT": "*", "as": "count"}, {"SUM": "grand_total", "as": "grand_total"}],
+			fields=["count(*) as count", "sum(grand_total) as grand_total"],
 		)
 
 	def get_from_to_date(self):

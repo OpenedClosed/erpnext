@@ -2,11 +2,11 @@
 # See license.txt
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from erpnext.controllers.queries import item_query
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["Item", "Customer", "Supplier"]
+test_dependencies = ["Item", "Customer", "Supplier"]
 
 
 def create_party_specific_item(**args):
@@ -18,7 +18,7 @@ def create_party_specific_item(**args):
 	psi.insert()
 
 
-class TestPartySpecificItem(IntegrationTestCase):
+class TestPartySpecificItem(FrappeTestCase):
 	def setUp(self):
 		self.customer = frappe.get_last_doc("Customer")
 		self.supplier = frappe.get_last_doc("Supplier")
@@ -35,7 +35,8 @@ class TestPartySpecificItem(IntegrationTestCase):
 		items = item_query(
 			doctype="Item", txt="", searchfield="name", start=0, page_len=20, filters=filters, as_dict=False
 		)
-		self.assertTrue(self.item.name in flatten(items))
+		for item in items:
+			self.assertEqual(item[0], self.item.name)
 
 	def test_item_query_for_supplier(self):
 		create_party_specific_item(
@@ -48,14 +49,5 @@ class TestPartySpecificItem(IntegrationTestCase):
 		items = item_query(
 			doctype="Item", txt="", searchfield="name", start=0, page_len=20, filters=filters, as_dict=False
 		)
-		self.assertTrue(self.item.item_group in flatten(items))
-
-
-def flatten(lst):
-	result = []
-	for item in lst:
-		if isinstance(item, tuple):
-			result.extend(flatten(item))
-		else:
-			result.append(item)
-	return result
+		for item in items:
+			self.assertEqual(item[2], self.item.item_group)

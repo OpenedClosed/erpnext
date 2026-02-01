@@ -11,13 +11,7 @@ erpnext.setup.EmployeeController = class EmployeeController extends frappe.ui.fo
 			};
 		};
 		this.frm.fields_dict.reports_to.get_query = function (doc, cdt, cdn) {
-			return {
-				query: "erpnext.controllers.queries.employee_query",
-				filters: [
-					["status", "=", "Active"],
-					["name", "!=", doc.name],
-				],
-			};
+			return { query: "erpnext.controllers.queries.employee_query" };
 		};
 	}
 
@@ -42,11 +36,6 @@ frappe.ui.form.on("Employee", {
 			};
 		});
 	},
-
-	refresh: function (frm) {
-		frm.fields_dict.date_of_birth.datepicker.update({ maxDate: new Date() });
-	},
-
 	prefered_contact_email: function (frm) {
 		frm.events.update_contact(frm);
 	},

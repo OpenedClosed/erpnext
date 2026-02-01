@@ -178,12 +178,7 @@ def get_data_when_grouped_by_invoice(columns, gross_profit_data, filters, group_
 	# to display item as Item Code: Item Name
 	columns[0] = "Sales Invoice:Link/Item:300"
 	# removing Item Code and Item Name columns
-	supplier_master_name = frappe.db.get_single_value("Buying Settings", "supp_master_name")
-	customer_master_name = frappe.db.get_single_value("Selling Settings", "cust_master_name")
-	if supplier_master_name == "Supplier Name" and customer_master_name == "Customer Name":
-		del columns[4:6]
-	else:
-		del columns[5:7]
+	del columns[4:6]
 
 	total_base_amount = 0
 	total_buying_amount = 0
@@ -230,15 +225,6 @@ def get_data_when_not_grouped_by_invoice(gross_profit_data, filters, group_wise_
 	total_buying_amount = 0
 
 	group_columns = group_wise_columns.get(scrub(filters.group_by))
-
-	# removing customer_name from group columns
-	customer_master_name = frappe.db.get_single_value("Selling Settings", "cust_master_name")
-	supplier_master_name = frappe.db.get_single_value("Buying Settings", "supp_master_name")
-
-	if "customer_name" in group_columns and (
-		supplier_master_name == "Supplier Name" and customer_master_name == "Customer Name"
-	):
-		group_columns = [col for col in group_columns if col != "customer_name"]
 
 	for src in gross_profit_data.grouped_data:
 		total_base_amount += src.base_amount or 0.00
@@ -289,7 +275,7 @@ def get_columns(group_wise_columns, filters):
 				"label": _("Posting Date"),
 				"fieldname": "posting_date",
 				"fieldtype": "Date",
-				"width": 120,
+				"width": 100,
 			},
 			"posting_time": {
 				"label": _("Posting Time"),
@@ -859,10 +845,7 @@ class GrossProfitGenerator:
 		if self.filters.to_date:
 			conditions += " and posting_date <= %(to_date)s"
 
-		if self.filters.include_returned_invoices:
-			conditions += " and (is_return = 0 or (is_return=1 and return_against is null))"
-		else:
-			conditions += " and is_return = 0"
+		conditions += " and (is_return = 0 or (is_return=1 and return_against is null))"
 
 		if self.filters.item_group:
 			conditions += f" and {get_item_group_condition(self.filters.item_group)}"

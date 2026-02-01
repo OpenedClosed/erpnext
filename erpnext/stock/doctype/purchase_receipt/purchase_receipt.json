@@ -59,6 +59,8 @@
   "column_break_27",
   "total",
   "net_total",
+  "tax_withholding_net_total",
+  "base_tax_withholding_net_total",
   "taxes_charges_section",
   "tax_category",
   "taxes_and_charges",
@@ -96,7 +98,6 @@
   "discount_amount",
   "sec_tax_breakup",
   "other_charges_calculation",
-  "item_wise_tax_details",
   "pricing_rule_details",
   "pricing_rules",
   "raw_material_details",
@@ -318,7 +319,7 @@
   },
   {
    "fieldname": "address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Address",
    "read_only": 1
   },
@@ -357,7 +358,7 @@
   },
   {
    "fieldname": "shipping_address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Shipping Address",
    "print_hide": 1,
    "read_only": 1
@@ -892,7 +893,7 @@
    "no_copy": 1,
    "oldfieldname": "status",
    "oldfieldtype": "Select",
-   "options": "\nDraft\nPartly Billed\nTo Bill\nCompleted\nReturn\nReturn Issued\nCancelled\nClosed",
+   "options": "\nDraft\nPartly Billed\nTo Bill\nCompleted\nReturn Issued\nCancelled\nClosed",
    "print_hide": 1,
    "print_width": "150px",
    "read_only": 1,
@@ -1101,7 +1102,7 @@
   },
   {
    "fieldname": "billing_address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Billing Address",
    "read_only": 1
   },
@@ -1247,13 +1248,30 @@
    "label": "Named Place"
   },
   {
-   "depends_on": "subcontracting_receipt",
+   "depends_on": "eval: (doc.is_subcontracted && !doc.is_old_subcontracting_flow)",
    "fieldname": "subcontracting_receipt",
    "fieldtype": "Link",
    "label": "Subcontracting Receipt",
    "options": "Subcontracting Receipt",
-   "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "tax_withholding_net_total",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Tax Withholding Net Total",
+   "no_copy": 1,
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_tax_withholding_net_total",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Base Tax Withholding Net Total",
+   "no_copy": 1,
+   "print_hide": 1,
+   "read_only": 1
   },
   {
    "fieldname": "dispatch_address",
@@ -1275,15 +1293,6 @@
    "fieldtype": "Data",
    "is_virtual": 1,
    "label": "Last Scanned Warehouse"
-  },
-  {
-   "fieldname": "item_wise_tax_details",
-   "fieldtype": "Table",
-   "hidden": 1,
-   "label": "Item Wise Tax Details",
-   "no_copy": 1,
-   "options": "Item Wise Tax Detail",
-   "print_hide": 1
   }
  ],
  "grid_page_length": 50,
@@ -1291,7 +1300,7 @@
  "idx": 261,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 21:24:30.652933",
+ "modified": "2025-08-06 16:41:02.690658",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Purchase Receipt",
@@ -1355,7 +1364,7 @@
  "row_format": "Dynamic",
  "search_fields": "status, posting_date, supplier",
  "show_name_in_global_search": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "timeline_field": "supplier",

@@ -19,7 +19,7 @@ class ProductionPlanItemReference(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		qty: DF.Float
+		qty: DF.Data | None
 		sales_order: DF.Link | None
 		sales_order_item: DF.Data | None
 	# end: auto-generated types

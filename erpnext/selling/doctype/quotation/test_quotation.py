@@ -1,120 +1,17 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import json
-
 import frappe
-from frappe.tests import IntegrationTestCase, change_settings
+from frappe.tests.utils import FrappeTestCase, change_settings
 from frappe.utils import add_days, add_months, flt, getdate, nowdate
 
-from erpnext.controllers.accounts_controller import InvalidQtyError, update_child_qty_rate
-from erpnext.selling.doctype.quotation.quotation import make_sales_order
+from erpnext.controllers.accounts_controller import InvalidQtyError
+from erpnext.setup.utils import get_exchange_rate
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["Product Bundle"]
+test_dependencies = ["Product Bundle"]
 
 
-class TestQuotation(IntegrationTestCase):
-	def test_update_child_quotation_add_item(self):
-		from erpnext.stock.doctype.item.test_item import make_item
-
-		item_1 = make_item("_Test Item")
-		item_2 = make_item("_Test Item 1")
-
-		item_list = [
-			{"item_code": item_1.item_code, "warehouse": "", "qty": 10, "rate": 300},
-			{"item_code": item_2.item_code, "warehouse": "", "qty": 5, "rate": 400},
-		]
-
-		qo = make_quotation(item_list=item_list)
-		first_item = qo.get("items")[0]
-		second_item = qo.get("items")[1]
-		trans_item = json.dumps(
-			[
-				{
-					"item_code": first_item.item_code,
-					"rate": first_item.rate,
-					"qty": 11,
-					"docname": first_item.name,
-				},
-				{
-					"item_code": second_item.item_code,
-					"rate": second_item.rate,
-					"qty": second_item.qty,
-					"docname": second_item.name,
-					"description": "test",
-				},
-				{"item_code": "_Test Item 2", "rate": 100, "qty": 7},
-			]
-		)
-
-		update_child_qty_rate("Quotation", trans_item, qo.name)
-		qo.reload()
-		self.assertEqual(qo.get("items")[0].qty, 11)
-		self.assertEqual(qo.get("items")[-1].rate, 100)
-		self.assertEqual(qo.get("items")[1].description, "test")
-
-	def test_disallow_due_date_before_transaction_date(self):
-		qo = make_quotation(qty=3, do_not_submit=1)
-		qo.payment_schedule[0].due_date = add_days(qo.transaction_date, -2)
-		self.assertRaises(frappe.ValidationError, qo.save)
-
-	def test_update_child_disallow_rate_change(self):
-		qo = make_quotation(qty=4)
-		trans_item = json.dumps(
-			[
-				{
-					"item_code": qo.items[0].item_code,
-					"rate": 5000,
-					"qty": qo.items[0].qty,
-					"docname": qo.items[0].name,
-				}
-			]
-		)
-		self.assertRaises(frappe.ValidationError, update_child_qty_rate, "Quotation", trans_item, qo.name)
-
-	def test_update_child_removing_item(self):
-		qo = make_quotation(qty=10)
-		sales_order = make_sales_order(qo.name)
-		sales_order.delivery_date = nowdate()
-
-		trans_item = json.dumps(
-			[
-				{
-					"item_code": qo.items[0].item_code,
-					"rate": qo.items[0].rate,
-					"qty": qo.items[0].qty,
-					"docname": qo.items[0].name,
-				},
-				{"item_code": "_Test Item 2", "rate": 100, "qty": 7},
-			]
-		)
-
-		update_child_qty_rate("Quotation", trans_item, qo.name)
-		sales_order.submit()
-		qo.reload()
-		self.assertEqual(qo.status, "Partially Ordered")
-
-		trans_item = json.dumps([{"item_code": "_Test Item 2", "rate": 100, "qty": 7}])
-
-		# check if items having a sales order can be removed
-		self.assertRaises(frappe.ValidationError, update_child_qty_rate, "Quotation", trans_item, qo.name)
-
-		trans_item = json.dumps(
-			[
-				{
-					"item_code": qo.items[0].item_code,
-					"rate": qo.items[0].rate,
-					"qty": qo.items[0].qty,
-					"docname": qo.items[0].name,
-				}
-			]
-		)
-
-		# remove item with no sales order
-		update_child_qty_rate("Quotation", trans_item, qo.name)
-		qo.reload()
-		self.assertEqual(len(qo.get("items")), 1)
-
+class TestQuotation(FrappeTestCase):
 	def test_quotation_qty(self):
 		qo = make_quotation(qty=0, do_not_save=True)
 		with self.assertRaises(InvalidQtyError):
@@ -145,7 +42,7 @@ class TestQuotation(IntegrationTestCase):
 	def test_make_sales_order_terms_copied(self):
 		from erpnext.selling.doctype.quotation.quotation import make_sales_order
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.insert()
@@ -190,7 +87,7 @@ class TestQuotation(IntegrationTestCase):
 	def test_gross_profit(self):
 		from erpnext.stock.doctype.item.test_item import make_item
 		from erpnext.stock.doctype.stock_entry.stock_entry_utils import make_stock_entry
-		from erpnext.stock.get_item_details import ItemDetailsCtx, insert_item_price
+		from erpnext.stock.get_item_details import insert_item_price
 
 		item_doc = make_item("_Test Item for Gross Profit", {"is_stock_item": 1})
 		item_code = item_doc.name
@@ -199,7 +96,7 @@ class TestQuotation(IntegrationTestCase):
 		selling_price_list = frappe.get_all("Price List", filters={"selling": 1}, limit=1)[0].name
 		frappe.db.set_single_value("Stock Settings", "auto_insert_price_list_rate_if_missing", 1)
 		insert_item_price(
-			ItemDetailsCtx(
+			frappe._dict(
 				{
 					"item_code": item_code,
 					"price_list": selling_price_list,
@@ -226,7 +123,7 @@ class TestQuotation(IntegrationTestCase):
 		maintain_rate = frappe.db.get_single_value("Selling Settings", "maintain_same_sales_rate")
 		frappe.db.set_single_value("Selling Settings", "maintain_same_sales_rate", 1)
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.insert()
@@ -241,7 +138,7 @@ class TestQuotation(IntegrationTestCase):
 	def test_make_sales_order_with_different_currency(self):
 		from erpnext.selling.doctype.quotation.quotation import make_sales_order
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.insert()
@@ -261,7 +158,7 @@ class TestQuotation(IntegrationTestCase):
 	def test_make_sales_order(self):
 		from erpnext.selling.doctype.quotation.quotation import make_sales_order
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.insert()
@@ -282,14 +179,14 @@ class TestQuotation(IntegrationTestCase):
 		sales_order.delivery_date = nowdate()
 		sales_order.insert()
 
-	@IntegrationTestCase.change_settings(
+	@change_settings(
 		"Accounts Settings",
 		{"add_taxes_from_item_tax_template": 0, "add_taxes_from_taxes_and_charges_template": 0},
 	)
 	def test_make_sales_order_with_terms(self):
 		from erpnext.selling.doctype.quotation.quotation import make_sales_order
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.update({"payment_terms_template": "_Test Payment Term Template"})
@@ -329,7 +226,7 @@ class TestQuotation(IntegrationTestCase):
 		)
 
 	def test_valid_till_before_transaction_date(self):
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.valid_till = add_days(quotation.transaction_date, -1)
 		self.assertRaises(frappe.ValidationError, quotation.validate)
 
@@ -338,7 +235,7 @@ class TestQuotation(IntegrationTestCase):
 
 		frappe.db.set_single_value("Selling Settings", "allow_sales_order_creation_for_expired_quotation", 0)
 
-		quotation = frappe.copy_doc(self.globalTestRecords["Quotation"][0])
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.valid_till = add_days(nowdate(), -1)
 		quotation.insert()
 		quotation.submit()
@@ -358,13 +255,11 @@ class TestQuotation(IntegrationTestCase):
 
 		rate_with_margin = flt((1500 * 18.75) / 100 + 1500)
 
-		test_record = dict(self.globalTestRecords["Quotation"][0])
+		test_records[0]["items"][0]["price_list_rate"] = 1500
+		test_records[0]["items"][0]["margin_type"] = "Percentage"
+		test_records[0]["items"][0]["margin_rate_or_amount"] = 18.75
 
-		test_record["items"][0]["price_list_rate"] = 1500
-		test_record["items"][0]["margin_type"] = "Percentage"
-		test_record["items"][0]["margin_rate_or_amount"] = 18.75
-
-		quotation = frappe.copy_doc(test_record)
+		quotation = frappe.copy_doc(test_records[0])
 		quotation.transaction_date = nowdate()
 		quotation.valid_till = add_months(quotation.transaction_date, 1)
 		quotation.insert()
@@ -825,7 +720,7 @@ class TestQuotation(IntegrationTestCase):
 		quotation.items[0].conversion_factor = 2.23
 		self.assertRaises(frappe.ValidationError, quotation.save)
 
-	@IntegrationTestCase.change_settings(
+	@change_settings(
 		"Accounts Settings",
 		{"add_taxes_from_item_tax_template": 1, "add_taxes_from_taxes_and_charges_template": 0},
 	)
@@ -893,7 +788,7 @@ class TestQuotation(IntegrationTestCase):
 		self.assertEqual(quotation.rounding_adjustment, 0)
 		self.assertEqual(quotation.rounded_total, 0)
 
-	@IntegrationTestCase.change_settings("Selling Settings", {"allow_zero_qty_in_quotation": 1})
+	@change_settings("Selling Settings", {"allow_zero_qty_in_quotation": 1})
 	def test_so_from_zero_qty_quotation(self):
 		from erpnext.selling.doctype.quotation.quotation import make_sales_order
 		from erpnext.stock.doctype.item.test_item import make_item
@@ -933,7 +828,7 @@ class TestQuotation(IntegrationTestCase):
 		# item code same but description different
 		make_item("_Test Item 2", {"is_stock_item": 1})
 
-		quotation = make_quotation(qty=10, rate=100, do_not_submit=1)
+		quotation = make_quotation(qty=1, rate=100, do_not_submit=1)
 
 		# duplicate items
 		for qty in [1, 1, 2, 3]:
@@ -947,7 +842,7 @@ class TestQuotation(IntegrationTestCase):
 		sales_order.delivery_date = nowdate()
 
 		self.assertEqual(len(sales_order.items), 6)
-		self.assertEqual(sales_order.items[0].qty, 10)
+		self.assertEqual(sales_order.items[0].qty, 1)
 		self.assertEqual(sales_order.items[-1].qty, 5)
 
 		# Row 1: 10, Row 4: 1, Row 5: 1
@@ -989,6 +884,9 @@ class TestQuotation(IntegrationTestCase):
 			expected_rate,
 			f"Expected conversion rate {expected_rate}, got {quotation.conversion_rate}",
 		)
+
+
+test_records = frappe.get_test_records("Quotation")
 
 
 def enable_calculate_bundle_price(enable=1):

@@ -16,7 +16,7 @@ from erpnext.accounts.doctype.gl_entry.gl_entry import (
 	validate_balance_type,
 	validate_frozen_account,
 )
-from erpnext.accounts.utils import OUTSTANDING_DOCTYPES, update_voucher_outstanding
+from erpnext.accounts.utils import update_voucher_outstanding
 from erpnext.exceptions import InvalidAccountDimensionError, MandatoryAccountDimensionError
 
 
@@ -38,7 +38,6 @@ class PaymentLedgerEntry(Document):
 		amount_in_account_currency: DF.Currency
 		company: DF.Link | None
 		cost_center: DF.Link | None
-		project: DF.Link | None
 		delinked: DF.Check
 		due_date: DF.Date | None
 		finance_book: DF.Link | None
@@ -52,36 +51,38 @@ class PaymentLedgerEntry(Document):
 	# end: auto-generated types
 
 	def validate_account(self):
-		account = frappe.get_cached_value(
-			"Account", self.account, fieldname=["account_type", "company"], as_dict=True
+		valid_account = frappe.db.get_list(
+			"Account",
+			"name",
+			filters={"name": self.account, "account_type": self.account_type, "company": self.company},
+			ignore_permissions=True,
 		)
-
-		if account.company != self.company:
-			frappe.throw(_("{0} account is not of company {1}").format(self.account, self.company))
-
-		if account.account_type != self.account_type:
+		if not valid_account:
 			frappe.throw(_("{0} account is not of type {1}").format(self.account, self.account_type))
 
 	def validate_account_details(self):
 		"""Account must be ledger, active and not freezed"""
 
-		account = frappe.get_cached_value(
-			"Account", self.account, fieldname=["is_group", "docstatus", "company"], as_dict=True
-		)
+		ret = frappe.db.sql(
+			"""select is_group, docstatus, company
+			from tabAccount where name=%s""",
+			self.account,
+			as_dict=1,
+		)[0]
 
-		if account.is_group == 1:
+		if ret.is_group == 1:
 			frappe.throw(
 				_(
 					"""{0} {1}: Account {2} is a Group Account and group accounts cannot be used in transactions"""
 				).format(self.voucher_type, self.voucher_no, self.account)
 			)
 
-		if account.docstatus == 2:
+		if ret.docstatus == 2:
 			frappe.throw(
 				_("{0} {1}: Account {2} is inactive").format(self.voucher_type, self.voucher_no, self.account)
 			)
 
-		if account.company != self.company:
+		if ret.company != self.company:
 			frappe.throw(
 				_("{0} {1}: Account {2} does not belong to Company {3}").format(
 					self.voucher_type, self.voucher_no, self.account, self.company
@@ -132,6 +133,7 @@ class PaymentLedgerEntry(Document):
 				account_type == "Profit and Loss"
 				and self.company == dimension.company
 				and dimension.mandatory_for_pl
+				and not dimension.disabled
 			):
 				if not self.get(dimension.fieldname):
 					frappe.throw(
@@ -144,6 +146,7 @@ class PaymentLedgerEntry(Document):
 				account_type == "Balance Sheet"
 				and self.company == dimension.company
 				and dimension.mandatory_for_bs
+				and not dimension.disabled
 			):
 				if not self.get(dimension.fieldname):
 					frappe.throw(
@@ -158,7 +161,7 @@ class PaymentLedgerEntry(Document):
 	def on_update(self):
 		adv_adj = self.flags.adv_adj
 		if not self.flags.from_repost:
-			validate_frozen_account(self.company, self.account, adv_adj)
+			validate_frozen_account(self.account, adv_adj)
 			if not self.delinked:
 				self.validate_account_details()
 				self.validate_dimensions_for_pl_and_bs()
@@ -167,7 +170,7 @@ class PaymentLedgerEntry(Document):
 
 		# update outstanding amount
 		if (
-			self.against_voucher_type in OUTSTANDING_DOCTYPES
+			self.against_voucher_type in ["Journal Entry", "Sales Invoice", "Purchase Invoice", "Fees"]
 			and self.flags.update_outstanding == "Yes"
 			and not frappe.flags.is_reverse_depr_entry
 		):

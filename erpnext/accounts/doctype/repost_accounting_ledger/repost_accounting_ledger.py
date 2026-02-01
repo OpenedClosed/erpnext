@@ -9,6 +9,8 @@ from frappe.desk.form.linked_with import get_child_tables_of_doctypes
 from frappe.model.document import Document
 from frappe.utils.data import comma_and
 
+from erpnext.stock import get_warehouse_account_map
+
 
 class RepostAccountingLedger(Document):
 	# begin: auto-generated types
@@ -99,8 +101,8 @@ class RepostAccountingLedger(Document):
 			if doc.doctype in ["Payment Entry", "Journal Entry"]:
 				gle_map = doc.build_gl_map()
 			elif doc.doctype == "Purchase Receipt":
-				inventory_account_map = doc.get_inventory_account_map()
-				gle_map = doc.get_gl_entries(inventory_account_map)
+				warehouse_account_map = get_warehouse_account_map(doc.company)
+				gle_map = doc.get_gl_entries(warehouse_account_map)
 			else:
 				gle_map = doc.get_gl_entries()
 
@@ -112,10 +114,6 @@ class RepostAccountingLedger(Document):
 	@frappe.whitelist()
 	def generate_preview(self):
 		from erpnext.accounts.report.general_ledger.general_ledger import get_columns as get_gl_columns
-
-		if not self.vouchers:
-			frappe.msgprint(_("Add vouchers to generate preview."))
-			return
 
 		gl_columns = []
 		gl_data = []
@@ -144,7 +142,6 @@ class RepostAccountingLedger(Document):
 				account_repost_doc=self.name,
 				is_async=True,
 				job_name=job_name,
-				enqueue_after_commit=True,
 			)
 			frappe.msgprint(_("Repost has started in the background"))
 		else:
@@ -216,10 +213,7 @@ def get_allowed_types_from_settings(child_doc: bool = False):
 	repost_docs = [
 		x.document_type
 		for x in frappe.db.get_all(
-			"Repost Allowed Types",
-			filters={"allowed": True},
-			fields=["document_type"],
-			distinct=True,
+			"Repost Allowed Types", filters={"allowed": True}, fields=["distinct(document_type)"]
 		)
 	]
 	result = repost_docs
@@ -293,11 +287,7 @@ def get_repost_allowed_types(doctype, txt, searchfield, start, page_len, filters
 		filters.update({"document_type": ("like", f"%{txt}%")})
 
 	if allowed_types := frappe.db.get_all(
-		"Repost Allowed Types",
-		filters=filters,
-		fields=["document_type"],
-		as_list=1,
-		distinct=True,
+		"Repost Allowed Types", filters=filters, fields=["distinct(document_type)"], as_list=1
 	):
 		return allowed_types
 	return []

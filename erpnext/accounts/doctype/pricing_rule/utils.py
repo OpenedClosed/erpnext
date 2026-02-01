@@ -6,6 +6,7 @@
 
 import copy
 import json
+import math
 
 import frappe
 from frappe import _, bold
@@ -27,7 +28,7 @@ def get_pricing_rules(args, doc=None):
 	pricing_rules = []
 	values = {}
 
-	if not frappe.db.count("Pricing Rule", cache=True):
+	if not frappe.db.exists("Pricing Rule", {"disable": 0, args.transaction_type: 1}):
 		return
 
 	for apply_on in ["Item Code", "Item Group", "Brand"]:
@@ -114,8 +115,8 @@ def _get_pricing_rules(apply_on, args, values):
 		if apply_on_field == "item_code":
 			if args.get("uom", None):
 				item_conditions += (
-					" and ({child_doc}.uom={item_uom} or IFNULL({child_doc}.uom, '')='')".format(
-						child_doc=child_doc, item_uom=frappe.db.escape(args.get("uom"))
+					" and ({child_doc}.uom='{item_uom}' or IFNULL({child_doc}.uom, '')='')".format(
+						child_doc=child_doc, item_uom=args.get("uom")
 					)
 				)
 			if "variant_of" not in args:
@@ -127,8 +128,8 @@ def _get_pricing_rules(apply_on, args, values):
 	elif apply_on_field == "item_group":
 		item_conditions = _get_tree_conditions(args, "Item Group", child_doc, False)
 		if args.get("uom", None):
-			item_conditions += " and ({child_doc}.uom={item_uom} or IFNULL({child_doc}.uom, '')='')".format(
-				child_doc=child_doc, item_uom=frappe.db.escape(args.get("uom"))
+			item_conditions += " and ({child_doc}.uom='{item_uom}' or IFNULL({child_doc}.uom, '')='')".format(
+				child_doc=child_doc, item_uom=args.get("uom")
 			)
 
 	conditions += get_other_conditions(conditions, values, args)
@@ -242,13 +243,10 @@ def get_other_conditions(conditions, values, args):
 		if group_condition:
 			conditions += " and " + group_condition
 
-	date = args.get("transaction_date") or frappe.get_value(
-		args.get("doctype"), args.get("name"), "posting_date", ignore=True
-	)
-	if date:
+	if args.get("transaction_date"):
 		conditions += """ and %(transaction_date)s between ifnull(`tabPricing Rule`.valid_from, '2000-01-01')
 			and ifnull(`tabPricing Rule`.valid_upto, '2500-12-31')"""
-		values["transaction_date"] = date
+		values["transaction_date"] = args.get("transaction_date")
 
 	if args.get("doctype") in [
 		"Quotation",
@@ -585,11 +583,7 @@ def apply_pricing_rule_on_transaction(doc):
 					if not d.get(pr_field):
 						continue
 
-					if (
-						d.validate_applied_rule
-						and doc.get(field) is not None
-						and doc.get(field) < d.get(pr_field)
-					):
+					if d.validate_applied_rule and (doc.get(field) or 0) < d.get(pr_field):
 						frappe.msgprint(_("User has not applied rule on the invoice {0}").format(doc.name))
 					else:
 						if not d.coupon_code_based:
@@ -758,10 +752,7 @@ def update_coupon_code_count(coupon_name, transaction_type):
 	coupon = frappe.get_doc("Coupon Code", coupon_name)
 	if coupon:
 		if transaction_type == "used":
-			if not coupon.maximum_use:
-				coupon.used = coupon.used + 1
-				coupon.save(ignore_permissions=True)
-			elif coupon.used < coupon.maximum_use:
+			if coupon.used < coupon.maximum_use:
 				coupon.used = coupon.used + 1
 				coupon.save(ignore_permissions=True)
 			else:

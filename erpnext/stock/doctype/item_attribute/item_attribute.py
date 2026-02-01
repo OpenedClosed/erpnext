@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import flt
 
 from erpnext.controllers.item_variant import (
+	InvalidItemAttributeValueError,
 	validate_is_incremental,
 	validate_item_attribute_value,
 )
@@ -36,6 +37,9 @@ class ItemAttribute(Document):
 		numeric_values: DF.Check
 		to_range: DF.Float
 	# end: auto-generated types
+
+	def __setup__(self):
+		self.flags.ignore_these_exceptions_in_test = [InvalidItemAttributeValueError]
 
 	def validate(self):
 		frappe.flags.attribute_values = None

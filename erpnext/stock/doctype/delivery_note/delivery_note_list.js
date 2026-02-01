@@ -12,8 +12,8 @@ frappe.listview_settings["Delivery Note"] = {
 		"currency",
 	],
 	get_indicator: function (doc) {
-		if (cint(doc.is_return) == 1 && doc.status == "Return") {
-			return [__("Return"), "gray", "is_return,=,1"];
+		if (cint(doc.is_return) == 1) {
+			return [__("Return"), "gray", "is_return,=,Yes"];
 		} else if (doc.status === "Closed") {
 			return [__("Closed"), "green", "status,=,Closed"];
 		} else if (doc.status === "Return Issued") {
@@ -30,6 +30,12 @@ frappe.listview_settings["Delivery Note"] = {
 			const docnames = doclist.get_checked_items(true);
 
 			if (selected_docs.length > 0) {
+				for (let doc of selected_docs) {
+					if (!doc.docstatus) {
+						frappe.throw(__("Cannot create a Delivery Trip from Draft documents."));
+					}
+				}
+
 				frappe.new_doc("Delivery Trip").then(() => {
 					// Empty out the child table before inserting new ones
 					cur_frm.set_value("delivery_stops", []);

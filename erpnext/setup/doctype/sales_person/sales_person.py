@@ -64,7 +64,7 @@ class SalesPerson(NestedSet):
 			frappe.db.get_value(
 				"Sales Team",
 				{"docstatus": 1, "parenttype": "Sales Order", "sales_person": self.sales_person_name},
-				[{"SUM": "allocated_amount"}],
+				"sum(allocated_amount)",
 			)
 		)
 
@@ -72,7 +72,7 @@ class SalesPerson(NestedSet):
 			frappe.db.get_value(
 				"Sales Team",
 				{"docstatus": 1, "parenttype": "Sales Invoice", "sales_person": self.sales_person_name},
-				[{"SUM": "allocated_amount"}],
+				"sum(allocated_amount)",
 			)
 		)
 

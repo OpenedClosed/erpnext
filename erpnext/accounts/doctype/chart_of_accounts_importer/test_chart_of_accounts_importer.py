@@ -1,8 +1,8 @@
 # Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestChartofAccountsImporter(IntegrationTestCase):
+class TestChartofAccountsImporter(unittest.TestCase):
 	pass

@@ -1,8 +1,11 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
+
+import unittest
+
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.test_runner import make_test_records
 from frappe.utils import nowdate
 
 from erpnext.accounts.doctype.account.account import (
@@ -12,10 +15,10 @@ from erpnext.accounts.doctype.account.account import (
 )
 from erpnext.stock import get_company_default_inventory_account, get_warehouse_account
 
-EXTRA_TEST_RECORD_DEPENDENCIES = ["Company"]
+test_dependencies = ["Company"]
 
 
-class TestAccount(IntegrationTestCase):
+class TestAccount(unittest.TestCase):
 	def test_rename_account(self):
 		if not frappe.db.exists("Account", "1210 - Debtors - _TC"):
 			acc = frappe.new_doc("Account")
@@ -117,7 +120,7 @@ class TestAccount(IntegrationTestCase):
 			InvalidAccountMergeError,
 			merge_account,
 			"Capital Stock - _TC",
-			"Software - _TC",
+			"Softwares - _TC",
 		)
 
 		# Raise error as currency doesn't match
@@ -199,6 +202,8 @@ class TestAccount(IntegrationTestCase):
 		"""
 		In a parent->child company setup, child should inherit parent account currency if explicitly specified.
 		"""
+
+		make_test_records("Company")
 
 		frappe.local.flags.pop("ignore_root_company_validation", None)
 
@@ -323,7 +328,7 @@ class TestAccount(IntegrationTestCase):
 
 
 def _make_test_records(verbose=None):
-	from frappe.tests.utils import make_test_objects
+	from frappe.test_runner import make_test_objects
 
 	accounts = [
 		# [account_name, parent_account, is_group]
@@ -414,13 +419,15 @@ def create_account(**kwargs):
 		return account.name
 	else:
 		account = frappe.get_doc(
-			doctype="Account",
-			is_group=kwargs.get("is_group", 0),
-			account_name=kwargs.get("account_name"),
-			account_type=kwargs.get("account_type"),
-			parent_account=kwargs.get("parent_account"),
-			company=kwargs.get("company"),
-			account_currency=kwargs.get("account_currency"),
+			dict(
+				doctype="Account",
+				is_group=kwargs.get("is_group", 0),
+				account_name=kwargs.get("account_name"),
+				account_type=kwargs.get("account_type"),
+				parent_account=kwargs.get("parent_account"),
+				company=kwargs.get("company"),
+				account_currency=kwargs.get("account_currency"),
+			)
 		)
 
 		account.save()

@@ -18,12 +18,12 @@ class PaymentEntryReference(Document):
 		account_type: DF.Data | None
 		advance_voucher_no: DF.DynamicLink | None
 		advance_voucher_type: DF.Link | None
-		allocated_amount: DF.Currency
+		allocated_amount: DF.Float
 		bill_no: DF.Data | None
 		due_date: DF.Date | None
 		exchange_gain_loss: DF.Currency
 		exchange_rate: DF.Float
-		outstanding_amount: DF.Currency
+		outstanding_amount: DF.Float
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
@@ -34,7 +34,7 @@ class PaymentEntryReference(Document):
 		reconcile_effect_on: DF.Date | None
 		reference_doctype: DF.Link
 		reference_name: DF.DynamicLink
-		total_amount: DF.Currency
+		total_amount: DF.Float
 	# end: auto-generated types
 
 	@property

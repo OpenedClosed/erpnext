@@ -32,6 +32,8 @@ repos:
                 cypress/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
+                erpnext/public/js/controllers/.*|
+                erpnext/templates/pages/order.js|
                 erpnext/templates/includes/.*
             )$
 

@@ -10,9 +10,6 @@ on:
       - "**.md"
       - "**.html"
       - "**.csv"
-      - 'crowdin.yml'
-      - '.coderabbit.yml'
-      - '.mergify.yml'
 
 permissions:
   contents: read

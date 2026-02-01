@@ -19,7 +19,7 @@ class SubcontractingOrderItem(Document):
 		bom: DF.Link
 		conversion_factor: DF.Float
 		cost_center: DF.Link | None
-		description: DF.TextEditor | None
+		description: DF.TextEditor
 		expected_delivery_date: DF.Date | None
 		expense_account: DF.Link | None
 		image: DF.Attach | None
@@ -35,7 +35,6 @@ class SubcontractingOrderItem(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		production_plan_sub_assembly_item: DF.Data | None
 		project: DF.Link | None
 		purchase_order_item: DF.Data | None
 		qty: DF.Float

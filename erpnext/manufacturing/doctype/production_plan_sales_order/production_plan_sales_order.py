@@ -21,7 +21,6 @@ class ProductionPlanSalesOrder(Document):
 		parenttype: DF.Data
 		sales_order: DF.Link
 		sales_order_date: DF.Date | None
-		status: DF.Data | None
 	# end: auto-generated types
 
 	pass

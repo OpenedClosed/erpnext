@@ -3,13 +3,14 @@
  "allow_auto_repeat": 1,
  "allow_import": 1,
  "autoname": "naming_series:",
- "creation": "2026-01-29 21:18:32.391385",
+ "creation": "2013-05-24 19:29:08",
  "doctype": "DocType",
  "document_type": "Document",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "customer_section",
+  "title",
   "naming_series",
   "quotation_to",
   "party_name",
@@ -78,7 +79,6 @@
   "referral_sales_partner",
   "sec_tax_breakup",
   "other_charges_calculation",
-  "item_wise_tax_details",
   "bundle_items_section",
   "packed_items",
   "pricing_rule_details",
@@ -128,10 +128,8 @@
   "customer_group",
   "territory",
   "column_break_108",
-  "utm_source",
-  "utm_campaign",
-  "utm_medium",
-  "utm_content",
+  "campaign",
+  "source",
   "column_break4",
   "opportunity",
   "supplier_quotation",
@@ -143,6 +141,16 @@
    "fieldname": "customer_section",
    "fieldtype": "Section Break",
    "options": "fa fa-user"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "{customer_name}",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title",
+   "no_copy": 1,
+   "print_hide": 1
   },
   {
    "fieldname": "naming_series",
@@ -261,7 +269,7 @@
   },
   {
    "fieldname": "address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Address",
    "oldfieldname": "customer_address",
    "oldfieldtype": "Small Text",
@@ -314,7 +322,7 @@
   },
   {
    "fieldname": "shipping_address",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Shipping Address",
    "print_hide": 1,
    "read_only": 1
@@ -824,9 +832,8 @@
   },
   {
    "fieldname": "language",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Print Language",
-   "options": "Language",
    "print_hide": 1,
    "read_only": 1
   },
@@ -850,6 +857,24 @@
    "fieldname": "update_auto_repeat_reference",
    "fieldtype": "Button",
    "label": "Update Auto Repeat Reference"
+  },
+  {
+   "fieldname": "campaign",
+   "fieldtype": "Link",
+   "label": "Campaign",
+   "oldfieldname": "campaign",
+   "oldfieldtype": "Link",
+   "options": "Campaign",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "oldfieldname": "source",
+   "oldfieldtype": "Select",
+   "options": "Lead Source",
+   "print_hide": 1
   },
   {
    "allow_on_submit": 1,
@@ -947,7 +972,7 @@
   },
   {
    "fieldname": "company_address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Company Address",
    "read_only": 1
   },
@@ -1051,37 +1076,6 @@
    "label": "Named Place"
   },
   {
-   "fieldname": "utm_campaign",
-   "fieldtype": "Link",
-   "label": "Campaign",
-   "oldfieldname": "campaign",
-   "oldfieldtype": "Link",
-   "options": "UTM Campaign",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_source",
-   "fieldtype": "Link",
-   "label": "Source",
-   "oldfieldname": "source",
-   "oldfieldtype": "Select",
-   "options": "UTM Source",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_medium",
-   "fieldtype": "Link",
-   "label": "Medium",
-   "options": "UTM Medium",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_content",
-   "fieldtype": "Data",
-   "label": "Content",
-   "print_hide": 1
-  },
-  {
    "default": "0",
    "fieldname": "disable_rounded_total",
    "fieldtype": "Check",
@@ -1108,22 +1102,13 @@
    "fieldtype": "Data",
    "is_virtual": 1,
    "label": "Last Scanned Warehouse"
-  },
-  {
-   "fieldname": "item_wise_tax_details",
-   "fieldtype": "Table",
-   "hidden": 1,
-   "label": "Item Wise Tax Details",
-   "no_copy": 1,
-   "options": "Item Wise Tax Detail",
-   "print_hide": 1
   }
  ],
  "icon": "fa fa-shopping-cart",
  "idx": 82,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 21:18:48.836168",
+ "modified": "2025-07-31 17:23:48.875382",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Quotation",
@@ -1217,9 +1202,9 @@
  "row_format": "Dynamic",
  "search_fields": "status,transaction_date,party_name,order_type",
  "show_name_in_global_search": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "timeline_field": "party_name",
- "title_field": "customer_name"
+ "title_field": "title"
 }

@@ -40,7 +40,6 @@
   {
    "fieldname": "description",
    "fieldtype": "Text",
-   "in_preview": 1,
    "label": "Description"
   },
   {
@@ -136,10 +135,7 @@
   }
  ],
  "quick_entry": 1,
- "row_format": "Dynamic",
- "show_preview_popup": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
  "track_changes": 1
 }

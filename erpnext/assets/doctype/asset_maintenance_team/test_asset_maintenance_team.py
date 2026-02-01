@@ -1,8 +1,8 @@
 # Copyright (c) 2017, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestAssetMaintenanceTeam(IntegrationTestCase):
+class TestAssetMaintenanceTeam(unittest.TestCase):
 	pass

@@ -154,7 +154,3 @@ class CostCenterAllocation(Document):
 					).format(d.cost_center),
 					InvalidChildCostCenter,
 				)
-
-	def clear_cache(self):
-		frappe.clear_cache(doctype="Cost Center")
-		return super().clear_cache()

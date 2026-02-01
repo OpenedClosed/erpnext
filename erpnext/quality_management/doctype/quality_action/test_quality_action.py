@@ -1,9 +1,9 @@
 # Copyright (c) 2018, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestQualityAction(IntegrationTestCase):
+class TestQualityAction(unittest.TestCase):
 	# quality action has no code
 	pass

@@ -1,9 +1,9 @@
 # Copyright (c) 2018, Frappe and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestQualityMeeting(IntegrationTestCase):
+class TestQualityMeeting(unittest.TestCase):
 	# nothing to test
 	pass

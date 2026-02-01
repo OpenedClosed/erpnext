@@ -9,9 +9,5 @@ def execute():
 		docs = frappe.get_all(
 			"Material Request", filters={"buying_price_list": ["is", "not set"], "docstatus": 1}, pluck="name"
 		)
-		frappe.db.auto_commit_on_many_writes = 1
-		try:
-			for doc in docs:
-				frappe.db.set_value("Material Request", doc, "buying_price_list", default_buying_price_list)
-		finally:
-			frappe.db.auto_commit_on_many_writes = 0
+		for doc in docs:
+			frappe.db.set_value("Material Request", doc, "buying_price_list", default_buying_price_list)

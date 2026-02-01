@@ -44,7 +44,7 @@ class ExchangeRateRevaluation(Document):
 		self.set_total_gain_loss()
 
 	def validate_rounding_loss_allowance(self):
-		if self.rounding_loss_allowance < 0 or self.rounding_loss_allowance >= 1:
+		if not (self.rounding_loss_allowance >= 0 and self.rounding_loss_allowance < 1):
 			frappe.throw(_("Rounding Loss Allowance should be between 0 and 1"))
 
 	def set_total_gain_loss(self):
@@ -252,7 +252,7 @@ class ExchangeRateRevaluation(Document):
 		company_currency = erpnext.get_company_currency(company)
 		precision = get_field_precision(
 			frappe.get_meta("Exchange Rate Revaluation Account").get_field("new_balance_in_base_currency"),
-			currency=company_currency,
+			company_currency,
 		)
 
 		if account_details:

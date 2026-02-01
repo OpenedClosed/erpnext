@@ -5,10 +5,9 @@
 from typing import TYPE_CHECKING, overload
 
 import frappe
-from frappe.utils import cint, flt, today
+from frappe.utils import cint, flt
 
 import erpnext
-from erpnext.stock.utils import get_combine_datetime
 
 if TYPE_CHECKING:
 	from erpnext.stock.doctype.stock_entry.stock_entry import StockEntry
@@ -77,9 +76,6 @@ def make_stock_entry(**args):
 	if args.inspection_required:
 		s.inspection_required = args.inspection_required
 
-	if not args.posting_date:
-		s.posting_date = today()
-
 	# map names
 	if args.from_warehouse:
 		args.source = args.from_warehouse
@@ -115,7 +111,7 @@ def make_stock_entry(**args):
 			args.company = frappe.db.get_value("Warehouse", args.target, "company")
 
 	# set vales from test
-	if frappe.in_test:
+	if frappe.flags.in_test:
 		if not args.company:
 			args.company = "_Test Company"
 		if not args.item:
@@ -144,10 +140,6 @@ def make_stock_entry(**args):
 		elif args.batches:
 			batches = args.batches
 
-		posting_datetime = None
-		if s.posting_date and s.posting_time:
-			posting_datetime = get_combine_datetime(s.posting_date, s.posting_time)
-
 		bundle_id = (
 			SerialBatchCreation(
 				{
@@ -159,7 +151,8 @@ def make_stock_entry(**args):
 					"serial_nos": args.serial_no,
 					"type_of_transaction": "Outward" if args.source else "Inward",
 					"company": s.company,
-					"posting_datetime": posting_datetime,
+					"posting_date": s.posting_date,
+					"posting_time": s.posting_time,
 					"rate": args.rate or args.basic_rate,
 					"do_not_submit": True,
 				}
@@ -190,7 +183,6 @@ def make_stock_entry(**args):
 			"cost_center": args.cost_center,
 			"expense_account": args.expense_account,
 			"use_serial_batch_fields": args.use_serial_batch_fields,
-			"sample_quantity": frappe.get_value("Item", args.item, "sample_quantity") or 0,
 		},
 	)
 

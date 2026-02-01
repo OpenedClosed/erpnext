@@ -2,16 +2,6 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Bank Statement Import", {
-	onload(frm) {
-		frm.set_query("bank_account", function (doc) {
-			return {
-				filters: {
-					company: doc.company,
-				},
-			};
-		});
-	},
-
 	setup(frm) {
 		frappe.realtime.on("data_import_refresh", ({ data_import }) => {
 			frm.import_in_progress = false;
@@ -70,7 +60,7 @@ frappe.ui.form.on("Bank Statement Import", {
 
 		frm.get_field("import_file").df.options = {
 			restrictions: {
-				allowed_file_types: [".csv", ".xls", ".xlsx", ".TXT", ".txt"],
+				allowed_file_types: [".csv", ".xls", ".xlsx"],
 			},
 		};
 
@@ -81,7 +71,6 @@ frappe.ui.form.on("Bank Statement Import", {
 
 	refresh(frm) {
 		frm.page.hide_icon_group();
-		frm.trigger("toggle_mt940_note");
 		frm.trigger("update_indicators");
 		frm.trigger("import_file");
 		frm.trigger("show_import_log");
@@ -193,24 +182,6 @@ frappe.ui.form.on("Bank Statement Import", {
 		});
 	},
 
-	import_mt940_fromat(frm) {
-		frm.trigger("toggle_mt940_note");
-		frm.save();
-	},
-
-	toggle_mt940_note(frm) {
-		if (!frm.doc.import_mt940_fromat) {
-			frm.set_df_property("custom_delimiters", "hidden", 0);
-			frm.set_df_property("google_sheets_url", "hidden", 0);
-			frm.set_df_property("html_5", "hidden", 0);
-		} else {
-			frm.set_df_property("custom_delimiters", "hidden", 1);
-			frm.set_df_property("google_sheets_url", "hidden", 1);
-			frm.set_df_property("html_5", "hidden", 1);
-		}
-		frm.set_value("import_mt940_fromat", frm.doc.import_mt940_fromat);
-	},
-
 	show_report_error_button(frm) {
 		if (frm.doc.status === "Error") {
 			frappe.db
@@ -252,7 +223,7 @@ frappe.ui.form.on("Bank Statement Import", {
 
 		open_url_post(method, {
 			doctype: "Bank Transaction",
-			export_records: "blank_template",
+			export_records: "5_records",
 			export_fields: {
 				"Bank Transaction": [
 					"date",
@@ -309,45 +280,23 @@ frappe.ui.form.on("Bank Statement Import", {
 			.html(__("Loading import file..."))
 			.appendTo(frm.get_field("import_preview").$wrapper);
 
-		frappe.run_serially([
-			// Convert MT940 to CSV if .txt file
-			() => {
-				if (frm.doc.import_file && frm.doc.import_file.toLowerCase().endsWith(".txt")) {
-					return frm
-						.call({
-							method: "convert_mt940_to_csv",
-							args: {
-								data_import: frm.doc.name,
-								mt940_file_path: frm.doc.import_file,
-							},
-						})
-						.then((r) => {
-							const file_url = r.message;
-							frm.set_value("import_file", file_url);
-							frm.save();
-						});
-				}
+		frm.call({
+			method: "get_preview_from_template",
+			args: {
+				data_import: frm.doc.name,
+				import_file: frm.doc.import_file,
+				google_sheets_url: frm.doc.google_sheets_url,
 			},
-			() => {
-				frm.call({
-					method: "get_preview_from_template",
-					args: {
-						data_import: frm.doc.name,
-						import_file: frm.doc.import_file,
-						google_sheets_url: frm.doc.google_sheets_url,
-					},
-					error_handlers: {
-						TimestampMismatchError() {
-							// ignore this error
-						},
-					},
-				}).then((r) => {
-					let preview_data = r.message;
-					frm.events.show_import_preview(frm, preview_data);
-					frm.events.show_import_warnings(frm, preview_data);
-				});
+			error_handlers: {
+				TimestampMismatchError() {
+					// ignore this error
+				},
 			},
-		]);
+		}).then((r) => {
+			let preview_data = r.message;
+			frm.events.show_import_preview(frm, preview_data);
+			frm.events.show_import_warnings(frm, preview_data);
+		});
 	},
 	// method: 'frappe.core.doctype.data_import.data_import.get_preview_from_template',
 

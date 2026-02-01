@@ -3,7 +3,7 @@
 
 
 import frappe
-from frappe import _
+from frappe import _, scrub
 from frappe.model.document import Document
 
 
@@ -70,6 +70,7 @@ class AccountingDimensionFilter(Document):
 
 def get_dimension_filter_map():
 	if not frappe.flags.get("dimension_filter_map"):
+		# nosemgrep
 		filters = frappe.db.sql(
 			"""
 			SELECT

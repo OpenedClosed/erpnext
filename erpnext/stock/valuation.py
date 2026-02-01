@@ -18,11 +18,7 @@ class BinWiseValuation(ABC):
 
 	@abstractmethod
 	def remove_stock(
-		self,
-		qty: float,
-		outgoing_rate: float = 0.0,
-		rate_generator: Callable[[], float] | None = None,
-		is_return_purchase_entry: bool = False,
+		self, qty: float, outgoing_rate: float = 0.0, rate_generator: Callable[[], float] | None = None
 	) -> list[StockBin]:
 		pass
 
@@ -100,11 +96,7 @@ class FIFOValuation(BinWiseValuation):
 					self.queue[-1][QTY] = qty
 
 	def remove_stock(
-		self,
-		qty: float,
-		outgoing_rate: float = 0.0,
-		rate_generator: Callable[[], float] | None = None,
-		is_return_purchase_entry: bool = False,
+		self, qty: float, outgoing_rate: float = 0.0, rate_generator: Callable[[], float] | None = None
 	) -> list[StockBin]:
 		"""Remove stock from the queue and return popped bins.
 
@@ -123,7 +115,7 @@ class FIFOValuation(BinWiseValuation):
 				self.queue.append([0, rate_generator()])
 
 			index = None
-			if outgoing_rate > 0 or is_return_purchase_entry:
+			if outgoing_rate > 0:
 				# Find the entry where rate matched with outgoing rate
 				for idx, fifo_bin in enumerate(self.queue):
 					if fifo_bin[RATE] == outgoing_rate:
@@ -210,11 +202,7 @@ class LIFOValuation(BinWiseValuation):
 					self.stack[-1][QTY] = qty
 
 	def remove_stock(
-		self,
-		qty: float,
-		outgoing_rate: float = 0.0,
-		rate_generator: Callable[[], float] | None = None,
-		is_return_purchase_entry: bool = False,
+		self, qty: float, outgoing_rate: float = 0.0, rate_generator: Callable[[], float] | None = None
 	) -> list[StockBin]:
 		"""Remove stock from the stack and return popped bins.
 

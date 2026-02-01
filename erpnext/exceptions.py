@@ -24,7 +24,3 @@ class InvalidAccountDimensionError(frappe.ValidationError):
 
 class MandatoryAccountDimensionError(frappe.ValidationError):
 	pass
-
-
-class ReportingCurrencyExchangeNotFoundError(frappe.ValidationError):
-	pass

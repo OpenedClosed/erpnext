@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
-from frappe.tests import IntegrationTestCase, change_settings
+from frappe.tests.utils import FrappeTestCase
 from frappe.utils import nowdate, nowtime
 
 from erpnext.stock.doctype.delivery_note.test_delivery_note import create_delivery_note
@@ -20,7 +20,7 @@ from erpnext.stock.doctype.stock_ledger_entry.stock_ledger_entry import Inventor
 from erpnext.stock.doctype.warehouse.test_warehouse import create_warehouse
 
 
-class TestInventoryDimension(IntegrationTestCase):
+class TestInventoryDimension(FrappeTestCase):
 	def setUp(self):
 		prepare_test_data()
 		create_store_dimension()
@@ -77,6 +77,8 @@ class TestInventoryDimension(IntegrationTestCase):
 		self.assertFalse(custom_field)
 
 	def test_inventory_dimension(self):
+		frappe.local.document_wise_inventory_dimensions = {}
+
 		warehouse = "Shelf Warehouse - _TC"
 		item_code = "_Test Item"
 
@@ -147,6 +149,8 @@ class TestInventoryDimension(IntegrationTestCase):
 		self.assertRaises(DoNotChangeError, inv_dim1.save)
 
 	def test_inventory_dimension_for_purchase_receipt_and_delivery_note(self):
+		frappe.local.document_wise_inventory_dimensions = {}
+
 		inv_dimension = create_inventory_dimension(
 			reference_document="Rack", dimension_name="Rack", apply_to_all_doctypes=1
 		)
@@ -163,6 +167,9 @@ class TestInventoryDimension(IntegrationTestCase):
 		create_custom_field(
 			"Delivery Note", dict(fieldname="rack", label="Rack", fieldtype="Link", options="Rack")
 		)
+
+		frappe.reload_doc("stock", "doctype", "purchase_receipt_item")
+		frappe.reload_doc("stock", "doctype", "delivery_note_item")
 
 		pr_doc = make_purchase_receipt(qty=2, do_not_submit=True)
 		pr_doc.rack = "Rack 1"
@@ -433,6 +440,7 @@ class TestInventoryDimension(IntegrationTestCase):
 				self.assertEqual(d.store, "Inter Transfer Store 2")
 
 	def test_validate_negative_stock_for_inventory_dimension(self):
+		frappe.local.inventory_dimensions = {}
 		item_code = "Test Negative Inventory Dimension Item"
 		frappe.db.set_single_value("Stock Settings", "allow_negative_stock", 1)
 		create_item(item_code)
@@ -481,7 +489,7 @@ class TestInventoryDimension(IntegrationTestCase):
 		# disable validate_negative_stock for inventory dimension
 		inv_dimension.reload()
 		inv_dimension.db_set("validate_negative_stock", 0)
-		frappe.clear_cache(doctype="Inventory Dimension")
+		frappe.local.inventory_dimensions = {}
 
 		# Try issuing 100 qty, more than available stock against inventory dimension
 		doc = make_stock_entry(item_code=item_code, source=warehouse, qty=100, do_not_submit=True)
@@ -495,59 +503,6 @@ class TestInventoryDimension(IntegrationTestCase):
 		)[0].inv_site
 
 		self.assertEqual(site_name, "Site 1")
-
-	@change_settings("Stock Settings", {"allow_negative_stock": 0})
-	def test_validate_negative_stock_with_multiple_dimension(self):
-		item_code = "Test Negative Multi Inventory Dimension Item"
-		create_item(item_code)
-
-		inv_dimension_1 = create_inventory_dimension(
-			apply_to_all_doctypes=1,
-			dimension_name="Inv Site",
-			reference_document="Inv Site",
-			document_type="Inv Site",
-			validate_negative_stock=1,
-		)
-		inv_dimension_1.db_set("validate_negative_stock", 1)
-
-		inv_dimension_2 = create_inventory_dimension(
-			apply_to_all_doctypes=1,
-			dimension_name="Rack",
-			reference_document="Rack",
-			document_type="Rack",
-			validate_negative_stock=1,
-		)
-		inv_dimension_2.db_set("validate_negative_stock", 1)
-
-		pr_doc = make_purchase_receipt(item_code=item_code, qty=30, do_not_submit=True)
-		pr_doc.items[0].inv_site = "Site 1"
-		pr_doc.items[0].rack = "Rack 1"
-		pr_doc.save()
-		pr_doc.submit()
-
-		pr_doc = make_purchase_receipt(item_code=item_code, qty=15, do_not_submit=True)
-		pr_doc.items[0].inv_site = "Site 1"
-		pr_doc.items[0].rack = "Rack 2"
-		pr_doc.save()
-		pr_doc.submit()
-
-		pr_doc = make_purchase_receipt(item_code=item_code, qty=30, do_not_submit=True)
-		pr_doc.items[0].inv_site = "Site 2"
-		pr_doc.items[0].rack = "Rack 1"
-		pr_doc.save()
-		pr_doc.submit()
-
-		pr_doc = make_purchase_receipt(item_code=item_code, qty=25, do_not_submit=True)
-		pr_doc.items[0].inv_site = "Site 2"
-		pr_doc.items[0].rack = "Rack 2"
-		pr_doc.save()
-		pr_doc.submit()
-
-		dn_doc = create_delivery_note(item_code=item_code, qty=35, do_not_submit=True)
-		dn_doc.items[0].inv_site = "Site 2"
-		dn_doc.items[0].rack = "Rack 1"
-		dn_doc.save()
-		self.assertRaises(InventoryDimensionNegativeStockError, dn_doc.submit)
 
 
 def get_voucher_sl_entries(voucher_no, fields):
@@ -638,7 +593,7 @@ def prepare_test_data():
 			}
 		).insert(ignore_permissions=True)
 
-	for rack in ["Rack 1", "Rack 2"]:
+	for rack in ["Rack 1"]:
 		if not frappe.db.exists("Rack", rack):
 			frappe.get_doc({"doctype": "Rack", "rack_name": rack}).insert(ignore_permissions=True)
 

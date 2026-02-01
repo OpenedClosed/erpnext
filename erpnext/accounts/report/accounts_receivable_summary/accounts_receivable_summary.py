@@ -4,7 +4,7 @@
 
 import frappe
 from frappe import _, scrub
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 from erpnext.accounts.party import get_partywise_advanced_payment_amount
 from erpnext.accounts.report.accounts_receivable.accounts_receivable import ReceivablePayableReport
@@ -24,7 +24,7 @@ class AccountsReceivableSummary(ReceivablePayableReport):
 	def run(self, args):
 		self.account_type = args.get("account_type")
 		self.party_type = get_party_types_from_account_type(self.account_type)
-		self.party_naming_by = frappe.db.get_single_value(args.get("naming_by")[0], args.get("naming_by")[1])
+		self.party_naming_by = frappe.db.get_value(args.get("naming_by")[0], None, args.get("naming_by")[1])
 		self.get_columns()
 		self.get_data(args)
 		return self.columns, self.data
@@ -53,7 +53,7 @@ class AccountsReceivableSummary(ReceivablePayableReport):
 		)
 
 		if self.filters.show_gl_balance:
-			gl_balance_map = get_gl_balance(self.filters.report_date, self.filters.company, self.account_type)
+			gl_balance_map = get_gl_balance(self.filters.report_date, self.filters.company)
 
 		for party, party_dict in self.party_total.items():
 			if flt(party_dict.outstanding, self.currency_precision) == 0:
@@ -171,7 +171,7 @@ class AccountsReceivableSummary(ReceivablePayableReport):
 			self.add_column(_("Difference"), fieldname="diff")
 
 		self.setup_ageing_columns()
-		self.add_column(label=_("Total Amount Due"), fieldname="total_due")
+		self.add_column(label="Total Amount Due", fieldname="total_due")
 
 		if self.filters.show_future_payments:
 			self.add_column(label=_("Future Payment Amount"), fieldname="future_amount")
@@ -206,15 +206,11 @@ class AccountsReceivableSummary(ReceivablePayableReport):
 		)
 
 
-def get_gl_balance(report_date, company, account_type):
-	if account_type == "Payable":
-		balance_calc_fields = ["party", {"SUM": [{"SUB": ["credit", "debit"]}], "as": "balance"}]
-	else:
-		balance_calc_fields = ["party", {"SUM": [{"SUB": ["debit", "credit"]}], "as": "balance"}]
+def get_gl_balance(report_date, company):
 	return frappe._dict(
 		frappe.db.get_all(
 			"GL Entry",
-			fields=balance_calc_fields,
+			fields=["party", "sum(debit -  credit)"],
 			filters={"posting_date": ("<=", report_date), "is_cancelled": 0, "company": company},
 			group_by="party",
 			as_list=1,

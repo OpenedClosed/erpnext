@@ -103,7 +103,7 @@ def get_data(filters):
 					"depreciation_amount": d.debit,
 					"depreciation_date": d.posting_date,
 					"value_after_depreciation": (
-						flt(row.net_purchase_amount) - flt(row.accumulated_depreciation_amount)
+						flt(row.gross_purchase_amount) - flt(row.accumulated_depreciation_amount)
 					),
 					"depreciation_entry": d.voucher_no,
 				}
@@ -119,8 +119,7 @@ def get_assets_details(assets):
 
 	fields = [
 		"name as asset",
-		"asset_name",
-		"net_purchase_amount",
+		"gross_purchase_amount",
 		"opening_accumulated_depreciation",
 		"asset_category",
 		"status",
@@ -145,12 +144,6 @@ def get_columns():
 			"width": 120,
 		},
 		{
-			"label": _("Asset Name"),
-			"fieldname": "asset_name",
-			"fieldtype": "Data",
-			"width": 140,
-		},
-		{
 			"label": _("Depreciation Date"),
 			"fieldname": "depreciation_date",
 			"fieldtype": "Date",
@@ -158,7 +151,7 @@ def get_columns():
 		},
 		{
 			"label": _("Purchase Amount"),
-			"fieldname": "net_purchase_amount",
+			"fieldname": "gross_purchase_amount",
 			"fieldtype": "Currency",
 			"width": 120,
 		},

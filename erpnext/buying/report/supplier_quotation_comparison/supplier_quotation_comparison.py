@@ -8,6 +8,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
+from erpnext.setup.utils import get_exchange_rate
+
 
 def execute(filters=None):
 	if not filters:
@@ -282,15 +284,15 @@ def get_columns(filters):
 
 
 def get_message():
-	return f"""<span class="indicator">
-		{_("Valid Till")}:&nbsp;&nbsp;
+	return """<span class="indicator">
+		Valid till : &nbsp;&nbsp;
 		</span>
 		<span class="indicator orange">
-		{_("Expires in a week or less")}
+		Expires in a week or less
 		</span>
 		&nbsp;&nbsp;
 		<span class="indicator red">
-		{_("Expires today or already expired")}
+		Expires today / Already Expired
 		</span>"""
 
 

@@ -1,11 +1,12 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+import unittest
+
 import frappe
-from frappe.tests import IntegrationTestCase
 
 
-class TestModeofPayment(IntegrationTestCase):
+class TestModeofPayment(unittest.TestCase):
 	pass
 
 

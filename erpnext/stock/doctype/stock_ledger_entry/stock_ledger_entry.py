@@ -5,7 +5,7 @@
 from datetime import date
 
 import frappe
-from frappe import _
+from frappe import _, bold
 from frappe.core.doctype.role.role import get_users
 from frappe.model.document import Document
 from frappe.query_builder.functions import Sum
@@ -15,6 +15,7 @@ from erpnext.accounts.utils import get_fiscal_year
 from erpnext.controllers.item_variant import ItemTemplateCannotHaveStock
 from erpnext.stock.doctype.inventory_dimension.inventory_dimension import get_inventory_dimensions
 from erpnext.stock.serial_batch_bundle import SerialBatchBundle
+from erpnext.stock.stock_ledger import get_previous_sle
 
 
 class StockFreezeError(frappe.ValidationError):
@@ -112,15 +113,17 @@ class StockLedgerEntry(Document):
 			return
 
 		flt_precision = cint(frappe.db.get_default("float_precision")) or 2
-		available_qty = self.get_available_qty_after_prev_transaction(dimensions)
+		for dimension, values in dimensions.items():
+			dimension_value = values.get("value")
+			available_qty = self.get_available_qty_after_prev_transaction(dimension, dimension_value)
 
-		diff = flt(available_qty + flt(self.actual_qty), flt_precision)  # qty after current transaction
-		if diff < 0 and abs(diff) > 0.0001:
-			self.throw_validation_error(diff, dimensions)
+			diff = flt(available_qty + flt(self.actual_qty), flt_precision)  # qty after current transaction
+			if diff < 0 and abs(diff) > 0.0001:
+				self.throw_validation_error(diff, dimension, dimension_value)
 
-	def get_available_qty_after_prev_transaction(self, dimensions):
+	def get_available_qty_after_prev_transaction(self, dimension, dimension_value):
 		sle = frappe.qb.DocType("Stock Ledger Entry")
-		available_qty_query = (
+		available_qty = (
 			frappe.qb.from_(sle)
 			.select(Sum(sle.actual_qty))
 			.where(
@@ -129,27 +132,21 @@ class StockLedgerEntry(Document):
 				& (sle.posting_datetime < self.posting_datetime)
 				& (sle.company == self.company)
 				& (sle.is_cancelled == 0)
+				& (sle[dimension] == dimension_value)
 			)
-		)
-
-		for dimension, values in dimensions.items():
-			dimension_value = values.get("value")
-			available_qty_query = available_qty_query.where(sle[dimension] == dimension_value)
-
-		available_qty = available_qty_query.run()
+		).run()
 
 		return available_qty[0][0] or 0
 
-	def throw_validation_error(self, diff, dimensions):
+	def throw_validation_error(self, diff, dimension, dimension_value):
 		msg = _(
-			"{0} units of {1} are required in {2} with the inventory dimension: {3} on {4} {5} for {6} to complete the transaction."
+			"{0} units of {1} are required in {2} with the inventory dimension: {3} ({4}) on {5} {6} for {7} to complete the transaction."
 		).format(
 			abs(diff),
 			frappe.get_desk_link("Item", self.item_code),
 			frappe.get_desk_link("Warehouse", self.warehouse),
-			frappe.bold(
-				", ".join([f"{dimension}: {values.get('value')}" for dimension, values in dimensions.items()])
-			),
+			frappe.bold(dimension),
+			frappe.bold(dimension_value),
 			self.posting_date,
 			self.posting_time,
 			frappe.get_desk_link(self.voucher_type, self.voucher_no),
@@ -175,7 +172,7 @@ class StockLedgerEntry(Document):
 		self.check_stock_frozen_date()
 
 		# Added to handle few test cases where serial_and_batch_bundles are not required
-		if frappe.in_test and frappe.flags.ignore_serial_batch_bundle_validation:
+		if frappe.flags.in_test and frappe.flags.ignore_serial_batch_bundle_validation:
 			return
 
 		if self.is_adjustment_entry:
@@ -231,13 +228,13 @@ class StockLedgerEntry(Document):
 			)
 
 		if item_detail.is_stock_item != 1:
-			self.throw_error_message(f"Item {self.item_code} must be a stock Item")
+			self.throw_error_message("Item {0} must be a stock Item").format(self.item_code)
 
 		if item_detail.has_serial_no or item_detail.has_batch_no:
 			if not self.serial_and_batch_bundle:
 				self.throw_error_message(f"Serial No / Batch No are mandatory for Item {self.item_code}")
 
-		if self.serial_and_batch_bundle and not item_detail.has_serial_no and not item_detail.has_batch_no:
+		if self.serial_and_batch_bundle and not (item_detail.has_serial_no or item_detail.has_batch_no):
 			self.throw_error_message(f"Serial No and Batch No are not allowed for Item {self.item_code}")
 
 	def throw_error_message(self, message, exception=frappe.ValidationError):
@@ -305,7 +302,7 @@ class StockLedgerEntry(Document):
 		is_group_warehouse(self.warehouse)
 
 	def validate_with_last_transaction_posting_time(self):
-		authorized_role = frappe.get_single_value(
+		authorized_role = frappe.db.get_single_value(
 			"Stock Settings", "role_allowed_to_create_edit_back_dated_transactions"
 		)
 		if authorized_role:
@@ -350,4 +347,5 @@ class StockLedgerEntry(Document):
 
 def on_doctype_update():
 	frappe.db.add_index("Stock Ledger Entry", ["voucher_no", "voucher_type"])
+	frappe.db.add_index("Stock Ledger Entry", ["batch_no", "item_code", "warehouse"])
 	frappe.db.add_index("Stock Ledger Entry", ["item_code", "warehouse", "posting_datetime", "creation"])

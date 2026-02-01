@@ -1,8 +1,8 @@
 # Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestItemTaxTemplate(IntegrationTestCase):
+class TestItemTaxTemplate(unittest.TestCase):
 	pass

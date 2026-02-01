@@ -16,7 +16,6 @@
   "is_default",
   "allow_alternative_item",
   "set_rate_of_sub_assembly_item_based_on_bom",
-  "is_phantom_bom",
   "project",
   "image",
   "currency_detail",
@@ -27,22 +26,19 @@
   "column_break_ivyw",
   "currency",
   "conversion_rate",
+  "materials_section",
+  "items",
+  "section_break_21",
   "operations_section_section",
   "with_operations",
-  "track_semi_finished_goods",
   "column_break_23",
   "transfer_material_against",
   "routing",
   "fg_based_operating_cost",
-  "column_break_joxb",
-  "default_source_warehouse",
-  "default_target_warehouse",
   "fg_based_section_section",
   "operating_cost_per_bom_quantity",
   "operations_section",
   "operations",
-  "materials_section",
-  "items",
   "scrap_section",
   "scrap_items_section",
   "scrap_items",
@@ -63,8 +59,8 @@
   "base_total_cost",
   "more_info_tab",
   "item_name",
-  "column_break_27",
   "description",
+  "column_break_27",
   "has_variants",
   "quality_inspection_section_break",
   "inspection_required",
@@ -202,7 +198,6 @@
   },
   {
    "collapsible": 1,
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "currency_detail",
    "fieldtype": "Section Break",
    "label": "Cost Configuration"
@@ -217,7 +212,7 @@
   },
   {
    "default": "Work Order",
-   "depends_on": "eval: doc.with_operations === 1 && doc.track_semi_finished_goods === 0",
+   "depends_on": "with_operations",
    "fieldname": "transfer_material_against",
    "fieldtype": "Select",
    "label": "Transfer Material Against",
@@ -284,7 +279,6 @@
    "oldfieldtype": "Section Break"
   },
   {
-   "allow_bulk_edit": 1,
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
@@ -295,7 +289,6 @@
   },
   {
    "collapsible": 1,
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "scrap_section",
    "fieldtype": "Tab Break",
    "label": "Scrap & Process Loss"
@@ -313,7 +306,6 @@
    "oldfieldtype": "Section Break"
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "operating_cost",
    "fieldtype": "Currency",
    "label": "Operating Cost",
@@ -328,7 +320,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "scrap_material_cost",
    "fieldtype": "Currency",
    "label": "Scrap Material Cost",
@@ -341,7 +332,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "base_operating_cost",
    "fieldtype": "Currency",
    "label": "Operating Cost (Company Currency)",
@@ -358,7 +348,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "base_scrap_material_cost",
    "fieldtype": "Currency",
    "label": "Scrap Material Cost(Company Currency)",
@@ -387,7 +376,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "Project",
@@ -419,8 +407,8 @@
   {
    "depends_on": "eval:!doc.__islocal",
    "fieldname": "section_break0",
-   "fieldtype": "Tab Break",
-   "label": "Exploded Items"
+   "fieldtype": "Section Break",
+   "label": "Materials Required (Exploded)"
   },
   {
    "fieldname": "exploded_items",
@@ -435,7 +423,6 @@
   },
   {
    "collapsible": 1,
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "website_section",
    "fieldtype": "Tab Break",
    "label": "Website"
@@ -500,6 +487,11 @@
    "label": "Show Operations"
   },
   {
+   "fieldname": "section_break_21",
+   "fieldtype": "Tab Break",
+   "label": "Operations"
+  },
+  {
    "fieldname": "column_break_23",
    "fieldtype": "Column Break"
   },
@@ -543,9 +535,6 @@
    "show_dashboard": 1
   },
   {
-   "collapsible": 1,
-   "collapsible_depends_on": "eval:doc.with_operations",
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "operations_section_section",
    "fieldtype": "Section Break",
    "label": "Operations"
@@ -558,14 +547,12 @@
   {
    "fieldname": "process_loss_percentage",
    "fieldtype": "Percent",
-   "label": "% Process Loss",
-   "non_negative": 1
+   "label": "% Process Loss"
   },
   {
    "fieldname": "process_loss_qty",
    "fieldtype": "Float",
    "label": "Process Loss Qty",
-   "non_negative": 1,
    "read_only": 1
   },
   {
@@ -582,7 +569,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:!doc.is_phantom_bom",
    "fieldname": "quality_inspection_section_break",
    "fieldtype": "Section Break",
    "label": "Quality Inspection"
@@ -632,8 +618,7 @@
    "no_copy": 1,
    "options": "BOM Creator",
    "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "bom_creator_item",
@@ -641,42 +626,11 @@
    "label": "BOM Creator Item",
    "no_copy": 1,
    "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_oxbz",
    "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "depends_on": "with_operations",
-   "description": "Users can consume raw materials and add semi-finished goods or final finished goods against the operation using job cards.",
-   "fieldname": "track_semi_finished_goods",
-   "fieldtype": "Check",
-   "label": "Track Semi Finished Goods"
-  },
-  {
-   "fieldname": "column_break_joxb",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "default_source_warehouse",
-   "fieldtype": "Link",
-   "label": "Default Source Warehouse",
-   "options": "Warehouse"
-  },
-  {
-   "fieldname": "default_target_warehouse",
-   "fieldtype": "Link",
-   "label": "Default Target Warehouse",
-   "options": "Warehouse"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_phantom_bom",
-   "fieldtype": "Check",
-   "label": "Is Phantom BOM"
   }
  ],
  "icon": "fa fa-sitemap",
@@ -684,7 +638,7 @@
  "image_field": "image",
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-19 16:17:15.925156",
+ "modified": "2025-06-16 16:13:22.497695",
  "modified_by": "Administrator",
  "module": "Manufacturing",
  "name": "BOM",
@@ -720,7 +674,7 @@
  "row_format": "Dynamic",
  "search_fields": "item, item_name",
  "show_name_in_global_search": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1

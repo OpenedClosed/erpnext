@@ -69,18 +69,12 @@ class PartyLedgerSummaryReport:
 		party_type = self.filters.party_type
 
 		doctype = qb.DocType(party_type)
-
-		party_details_fields = [
-			doctype.name.as_("party"),
-			f"{scrub(party_type)}_name",
-			f"{scrub(party_type)}_group",
-		]
-
-		if party_type == "Customer":
-			party_details_fields.append(doctype.territory)
-
 		conditions = self.get_party_conditions(doctype)
-		query = qb.from_(doctype).select(*party_details_fields).where(Criterion.all(conditions))
+		query = (
+			qb.from_(doctype)
+			.select(doctype.name.as_("party"), f"{scrub(party_type)}_name")
+			.where(Criterion.all(conditions))
+		)
 
 		from frappe.desk.reportview import build_match_conditions
 
@@ -159,31 +153,6 @@ class PartyLedgerSummaryReport:
 
 		credit_or_debit_note = "Credit Note" if self.filters.party_type == "Customer" else "Debit Note"
 
-		if self.filters.party_type == "Customer":
-			columns += [
-				{
-					"label": _("Customer Group"),
-					"fieldname": "customer_group",
-					"fieldtype": "Link",
-					"options": "Customer Group",
-				},
-				{
-					"label": _("Territory"),
-					"fieldname": "territory",
-					"fieldtype": "Link",
-					"options": "Territory",
-				},
-			]
-		else:
-			columns += [
-				{
-					"label": _("Supplier Group"),
-					"fieldname": "supplier_group",
-					"fieldtype": "Link",
-					"options": "Supplier Group",
-				}
-			]
-
 		columns += [
 			{
 				"label": _("Opening Balance"),
@@ -241,11 +210,38 @@ class PartyLedgerSummaryReport:
 				"fieldtype": "Link",
 				"options": "Currency",
 				"width": 50,
-				"hidden": 1,
 			},
 		]
 
-		columns.append({"label": _("Dr/Cr"), "fieldname": "dr_or_cr", "fieldtype": "Data", "width": 100})
+		# Hidden columns for handling 'User Permissions'
+		if self.filters.party_type == "Customer":
+			columns += [
+				{
+					"label": _("Territory"),
+					"fieldname": "territory",
+					"fieldtype": "Link",
+					"options": "Territory",
+					"hidden": 1,
+				},
+				{
+					"label": _("Customer Group"),
+					"fieldname": "customer_group",
+					"fieldtype": "Link",
+					"options": "Customer Group",
+					"hidden": 1,
+				},
+			]
+		else:
+			columns += [
+				{
+					"label": _("Supplier Group"),
+					"fieldname": "supplier_group",
+					"fieldtype": "Link",
+					"options": "Supplier Group",
+					"hidden": 1,
+				}
+			]
+
 		return columns
 
 	def get_data(self):
@@ -317,13 +313,6 @@ class PartyLedgerSummaryReport:
 				for account in self.party_adjustment_accounts:
 					row["adj_" + scrub(account)] = adjustments.get(account, 0)
 
-				if self.filters.party_type == "Customer":
-					balance = row.get("closing_balance", 0)
-					row["dr_or_cr"] = "Dr" if balance > 0 else "Cr" if balance < 0 else ""
-				else:
-					balance = row.get("closing_balance", 0)
-					row["dr_or_cr"] = "Cr" if balance > 0 else "Dr" if balance < 0 else ""
-
 				out.append(row)
 
 		return out
@@ -351,28 +340,6 @@ class PartyLedgerSummaryReport:
 				& (gle.party.isin(self.parties))
 			)
 		)
-
-		if self.filters.get("ignore_cr_dr_notes"):
-			system_generated_cr_dr_journals = frappe.db.get_all(
-				"Journal Entry",
-				filters={
-					"company": self.filters.get("company"),
-					"docstatus": 1,
-					"voucher_type": ("in", ["Credit Note", "Debit Note"]),
-					"is_system_generated": 1,
-					"posting_date": ["between", [self.filters.get("from_date"), self.filters.get("to_date")]],
-				},
-				as_list=True,
-			)
-			if system_generated_cr_dr_journals:
-				vouchers_to_ignore = (self.filters.get("voucher_no_not_in") or []) + [
-					x[0] for x in system_generated_cr_dr_journals
-				]
-				self.filters.update({"voucher_no_not_in": vouchers_to_ignore})
-
-		voucher_no_not_in = self.filters.get("voucher_no_not_in", [])
-		if voucher_no_not_in:
-			query = query.where(gle.voucher_no.notin(voucher_no_not_in))
 
 		query = self.prepare_conditions(query)
 

@@ -150,7 +150,6 @@
   },
   {
    "bold": 1,
-   "fetch_from": "price_list.currency",
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
@@ -196,7 +195,7 @@
   {
    "fieldname": "valid_upto",
    "fieldtype": "Date",
-   "label": "Valid Up To"
+   "label": "Valid Upto"
   },
   {
    "fieldname": "section_break_24",
@@ -221,12 +220,11 @@
    "options": "Batch"
   }
  ],
- "grid_page_length": 50,
  "icon": "fa fa-flag",
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-19 20:27:21.382369",
+ "modified": "2024-04-02 22:18:00.450641",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item Price",
@@ -261,8 +259,7 @@
   }
  ],
  "quick_entry": 1,
- "row_format": "Dynamic",
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "ASC",
  "states": [],
  "title_field": "item_name",

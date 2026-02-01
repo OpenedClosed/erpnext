@@ -134,7 +134,10 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 	}
 
 	target_asset() {
-		if (this.frm.doc.target_asset) {
+		if (
+			this.frm.doc.target_asset &&
+			this.frm.doc.capitalization_method === "Choose a WIP composite asset"
+		) {
 			this.set_consumed_stock_items_tagged_to_wip_composite_asset(this.frm.doc.target_asset);
 			this.get_target_asset_details();
 		}
@@ -188,13 +191,6 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 	}
 
 	warehouse(doc, cdt, cdn) {
-		var row = frappe.get_doc(cdt, cdn);
-		if (cdt === "Asset Capitalization Stock Item") {
-			this.get_warehouse_details(row);
-		}
-	}
-
-	serial_and_batch_bundle(doc, cdt, cdn) {
 		var row = frappe.get_doc(cdt, cdn);
 		if (cdt === "Asset Capitalization Stock Item") {
 			this.get_warehouse_details(row);
@@ -325,7 +321,7 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 				method: "erpnext.assets.doctype.asset_capitalization.asset_capitalization.get_consumed_stock_item_details",
 				child: row,
 				args: {
-					ctx: {
+					args: {
 						item_code: row.item_code,
 						warehouse: row.warehouse,
 						stock_qty: flt(row.stock_qty),
@@ -353,7 +349,7 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 				method: "erpnext.assets.doctype.asset_capitalization.asset_capitalization.get_consumed_asset_details",
 				child: row,
 				args: {
-					ctx: {
+					args: {
 						asset: row.asset,
 						doctype: me.frm.doc.doctype,
 						name: me.frm.doc.name,
@@ -380,7 +376,7 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 				method: "erpnext.assets.doctype.asset_capitalization.asset_capitalization.get_service_item_details",
 				child: row,
 				args: {
-					ctx: {
+					args: {
 						item_code: row.item_code,
 						qty: flt(row.qty),
 						expense_account: row.expense_account,
@@ -414,7 +410,6 @@ erpnext.assets.AssetCapitalization = class AssetCapitalization extends erpnext.s
 						voucher_type: me.frm.doc.doctype,
 						voucher_no: me.frm.doc.name,
 						allow_zero_valuation: 1,
-						serial_and_batch_bundle: item.serial_and_batch_bundle,
 					},
 				},
 				callback: function (r) {

@@ -4,7 +4,7 @@
 import random
 
 import frappe
-from frappe.tests import IntegrationTestCase
+from frappe.tests.utils import FrappeTestCase
 
 from erpnext.manufacturing.doctype.bom_creator.bom_creator import (
 	add_item,
@@ -13,7 +13,7 @@ from erpnext.manufacturing.doctype.bom_creator.bom_creator import (
 from erpnext.stock.doctype.item.test_item import make_item
 
 
-class TestBOMCreator(IntegrationTestCase):
+class TestBOMCreator(FrappeTestCase):
 	def setUp(self) -> None:
 		create_items()
 
@@ -63,10 +63,8 @@ class TestBOMCreator(IntegrationTestCase):
 
 		fg_valuation_rate = 0
 		for row in doc.items:
-			if row.fg_item == final_product:
-				fg_valuation_rate += row.amount
-
 			if not row.is_expandable:
+				fg_valuation_rate += row.amount
 				self.assertEqual(row.fg_item, "Frame Assembly")
 				self.assertEqual(row.fg_reference_id, doc.items[0].name)
 
@@ -107,10 +105,8 @@ class TestBOMCreator(IntegrationTestCase):
 
 		fg_valuation_rate = 0
 		for row in doc.items:
-			if row.fg_item == final_product:
-				fg_valuation_rate += row.amount
-
 			if not row.is_expandable:
+				fg_valuation_rate += row.amount
 				self.assertEqual(row.fg_item, "Bicycle")
 				self.assertEqual(row.fg_reference_id, doc.name)
 
@@ -174,10 +170,8 @@ class TestBOMCreator(IntegrationTestCase):
 
 		fg_valuation_rate = 0
 		for row in doc.items:
-			if row.fg_item == final_product:
-				fg_valuation_rate += row.amount
-
 			if not row.is_expandable:
+				fg_valuation_rate += row.amount
 				self.assertEqual(row.fg_item, "Pedal Assembly")
 				self.assertEqual(row.qty, 2.0)
 				self.assertEqual(row.fg_reference_id, doc.items[0].name)

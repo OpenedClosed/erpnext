@@ -8,6 +8,7 @@
  "document_type": "Document",
  "engine": "InnoDB",
  "field_order": [
+  "title",
   "naming_series",
   "customer",
   "tax_id",
@@ -85,7 +86,6 @@
   "discount_amount",
   "sec_tax_breakup",
   "other_charges_calculation",
-  "item_wise_tax_details",
   "packing_list",
   "packed_items",
   "product_bundle_help",
@@ -125,14 +125,13 @@
   "per_returned",
   "transporter_info",
   "transporter",
-  "lr_no",
-  "delivery_trip",
   "driver",
+  "lr_no",
+  "vehicle_no",
   "col_break34",
   "transporter_name",
-  "lr_date",
-  "vehicle_no",
   "driver_name",
+  "lr_date",
   "customer_po_details",
   "po_no",
   "column_break_17",
@@ -160,17 +159,24 @@
   "inter_company_reference",
   "customer_group",
   "territory",
-  "column_break_pxls",
-  "utm_source",
-  "utm_campaign",
-  "utm_medium",
-  "utm_content",
+  "source",
+  "campaign",
   "column_break5",
   "excise_page",
   "instructions",
   "connections_tab"
  ],
  "fields": [
+  {
+   "allow_on_submit": 1,
+   "default": "{customer_name}",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title",
+   "no_copy": 1,
+   "print_hide": 1
+  },
   {
    "fieldname": "naming_series",
    "fieldtype": "Select",
@@ -347,7 +353,7 @@
   },
   {
    "fieldname": "shipping_address",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Shipping Address",
    "read_only": 1
   },
@@ -404,7 +410,7 @@
   },
   {
    "fieldname": "address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Billing Address",
    "read_only": 1
   },
@@ -416,7 +422,7 @@
   },
   {
    "fieldname": "company_address_display",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Company Address",
    "read_only": 1
   },
@@ -965,6 +971,24 @@
    "options": "Project"
   },
   {
+   "fieldname": "campaign",
+   "fieldtype": "Link",
+   "label": "Campaign",
+   "oldfieldname": "campaign",
+   "oldfieldtype": "Link",
+   "options": "Campaign",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "oldfieldname": "source",
+   "oldfieldtype": "Select",
+   "options": "Lead Source",
+   "print_hide": 1
+  },
+  {
    "fieldname": "column_break5",
    "fieldtype": "Column Break",
    "oldfieldtype": "Column Break",
@@ -1024,12 +1048,9 @@
    "report_hide": 1
   },
   {
-   "fetch_from": "customer.language",
-   "fetch_if_empty": 1,
    "fieldname": "language",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Print Language",
-   "options": "Language",
    "print_hide": 1,
    "read_only": 1
   },
@@ -1070,7 +1091,7 @@
    "no_copy": 1,
    "oldfieldname": "status",
    "oldfieldtype": "Select",
-   "options": "\nDraft\nTo Bill\nCompleted\nReturn\nReturn Issued\nCancelled\nClosed",
+   "options": "\nDraft\nTo Bill\nCompleted\nReturn Issued\nCancelled\nClosed",
    "print_hide": 1,
    "print_width": "150px",
    "read_only": 1,
@@ -1261,7 +1282,7 @@
   {
    "depends_on": "dispatch_address_name",
    "fieldname": "dispatch_address",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Small Text",
    "label": "Dispatch Address",
    "print_hide": 1,
    "read_only": 1
@@ -1365,48 +1386,6 @@
    "label": "Named Place"
   },
   {
-   "fieldname": "delivery_trip",
-   "fieldtype": "Link",
-   "label": "Delivery Trip",
-   "options": "Delivery Trip",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "column_break_pxls",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "utm_medium",
-   "fieldtype": "Link",
-   "label": "Medium",
-   "options": "UTM Medium",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_content",
-   "fieldtype": "Data",
-   "label": "Content",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_source",
-   "fieldtype": "Link",
-   "label": "Source",
-   "oldfieldname": "source",
-   "oldfieldtype": "Select",
-   "options": "UTM Source",
-   "print_hide": 1
-  },
-  {
-   "fieldname": "utm_campaign",
-   "fieldtype": "Link",
-   "label": "Campaign",
-   "oldfieldname": "campaign",
-   "oldfieldtype": "Link",
-   "options": "UTM Campaign",
-   "print_hide": 1
-  },
-  {
    "fieldname": "company_contact_person",
    "fieldtype": "Link",
    "label": "Company Contact Person",
@@ -1419,22 +1398,13 @@
    "fieldtype": "Data",
    "is_virtual": 1,
    "label": "Last Scanned Warehouse"
-  },
-  {
-   "fieldname": "item_wise_tax_details",
-   "fieldtype": "Table",
-   "hidden": 1,
-   "label": "Item Wise Tax Details",
-   "no_copy": 1,
-   "options": "Item Wise Tax Detail",
-   "print_hide": 1
   }
  ],
  "icon": "fa fa-truck",
  "idx": 146,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-29 21:24:11.781261",
+ "modified": "2025-08-04 19:20:47.724218",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Delivery Note",
@@ -1528,11 +1498,11 @@
  "row_format": "Dynamic",
  "search_fields": "status,customer,customer_name, territory,base_grand_total",
  "show_name_in_global_search": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "timeline_field": "customer",
- "title_field": "customer_name",
+ "title_field": "title",
  "track_changes": 1,
  "track_seen": 1
 }

@@ -166,7 +166,7 @@ def set_total(node, value, complete_list, totals):
 	totals[node["account"]] += value
 
 	parent = node["parent_account"]
-	if parent != "":
+	if not parent == "":
 		return set_total(
 			next(item for item in complete_list if item["account"] == parent), value, complete_list, totals
 		)
@@ -219,18 +219,13 @@ def get_net_profit(
 
 	has_value = False
 
-	gross_income_roots = [row for row in (gross_income or []) if not flt(row.get("indent"))]
-	non_gross_income_roots = [row for row in (non_gross_income or []) if not flt(row.get("indent"))]
-	gross_expense_roots = [row for row in (gross_expense or []) if not flt(row.get("indent"))]
-	non_gross_expense_roots = [row for row in (non_gross_expense or []) if not flt(row.get("indent"))]
-
 	for period in period_list:
 		key = period if consolidated else period.key
+		gross_income_for_period = flt(gross_income[0].get(key, 0)) if gross_income else 0
+		non_gross_income_for_period = flt(non_gross_income[0].get(key, 0)) if non_gross_income else 0
 
-		gross_income_for_period = sum(flt(row.get(key, 0)) for row in gross_income_roots)
-		non_gross_income_for_period = sum(flt(row.get(key, 0)) for row in non_gross_income_roots)
-		gross_expense_for_period = sum(flt(row.get(key, 0)) for row in gross_expense_roots)
-		non_gross_expense_for_period = sum(flt(row.get(key, 0)) for row in non_gross_expense_roots)
+		gross_expense_for_period = flt(gross_expense[0].get(key, 0)) if gross_expense else 0
+		non_gross_expense_for_period = flt(non_gross_expense[0].get(key, 0)) if non_gross_expense else 0
 
 		total_income = gross_income_for_period + non_gross_income_for_period
 		total_expense = gross_expense_for_period + non_gross_expense_for_period

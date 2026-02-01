@@ -1,8 +1,8 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-from frappe.tests import IntegrationTestCase
+import unittest
 
 
-class TestCashierClosing(IntegrationTestCase):
+class TestCashierClosing(unittest.TestCase):
 	pass

@@ -15,7 +15,7 @@ from frappe.utils import cint, nowdate, today, unique
 from pypika import Order
 
 import erpnext
-from erpnext.stock.get_item_details import ItemDetailsCtx, _get_item_tax_template
+from erpnext.stock.get_item_details import _get_item_tax_template
 
 
 # searches for active employees
@@ -197,12 +197,7 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 
 	searchfields = searchfields + [
 		field
-		for field in [
-			searchfield or "name",
-			"item_code",
-			"item_group",
-			"item_name",
-		]
+		for field in [searchfield or "name", "item_code", "item_group", "item_name"]
 		if field not in searchfields
 	]
 	searchfields = " or ".join([field + " like %(txt)s" for field in searchfields])
@@ -212,10 +207,7 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 			party = filters.get("customer") or filters.get("supplier")
 			item_rules_list = frappe.get_all(
 				"Party Specific Item",
-				filters={
-					"party": ["!=", party],
-					"party_type": "Customer" if filters.get("customer") else "Supplier",
-				},
+				filters={"party": party},
 				fields=["restrict_based_on", "based_on_value"],
 			)
 
@@ -229,7 +221,7 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 				filters_dict[rule.restrict_based_on].append(rule.based_on_value)
 
 			for filter in filters_dict:
-				filters[scrub(filter)] = ["not in", filters_dict[filter]]
+				filters[scrub(filter)] = ["in", filters_dict[filter]]
 
 			if filters.get("customer"):
 				del filters["customer"]
@@ -240,7 +232,7 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 			filters.pop("supplier", None)
 
 	description_cond = ""
-	if frappe.db.estimate_count(doctype) < 50000:
+	if frappe.db.count(doctype, cache=True) < 50000:
 		# scan description only if items are less than 50000
 		description_cond = "or tabItem.description LIKE %(txt)s"
 
@@ -321,7 +313,7 @@ def get_project_name(doctype, txt, searchfield, start, page_len, filters):
 	if filters:
 		if filters.get("customer"):
 			qb_filter_and_conditions.append(
-				(proj.customer == filters.get("customer")) | (proj.customer.isnull()) | (proj.customer == "")
+				(proj.customer == filters.get("customer")) | proj.customer.isnull() | proj.customer == ""
 			)
 
 		if filters.get("company"):
@@ -889,17 +881,15 @@ def get_tax_template(doctype, txt, searchfield, start, page_len, filters):
 		valid_from = filters.get("valid_from")
 		valid_from = valid_from[1] if isinstance(valid_from, list) else valid_from
 
-		ctx = ItemDetailsCtx(
-			{
-				"item_code": filters.get("item_code"),
-				"posting_date": valid_from,
-				"tax_category": filters.get("tax_category"),
-				"company": company,
-				"base_net_rate": filters.get("base_net_rate"),
-			}
-		)
+		args = {
+			"item_code": filters.get("item_code"),
+			"posting_date": valid_from,
+			"tax_category": filters.get("tax_category"),
+			"company": company,
+			"base_net_rate": filters.get("base_net_rate"),
+		}
 
-		taxes = _get_item_tax_template(ctx, taxes, for_validate=True)
+		taxes = _get_item_tax_template(args, taxes, for_validate=True)
 		txt = txt.lower()
 		return [(d,) for d in set(taxes) if not txt or txt in d.lower()]
 
@@ -962,7 +952,7 @@ def get_filtered_child_rows(doctype, txt, searchfield, start, page_len, filters)
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_item_uom_query(doctype, txt, searchfield, start, page_len, filters):
-	if frappe.get_single_value("Stock Settings", "allow_uom_with_conversion_rate_defined_in_item"):
+	if frappe.db.get_single_value("Stock Settings", "allow_uom_with_conversion_rate_defined_in_item"):
 		query_filters = {"parent": filters.get("item_code")}
 
 		if txt:

@@ -2,6 +2,7 @@
 *.py~
 .DS_Store
 conf.py
+locale
 latest_updates.json
 .wnf-lang-status
 *.egg-info
@@ -14,8 +15,5 @@ __pycache__
 *~
 .idea/
 .vscode/
-.helix/
 node_modules/
 .backportrc.json
-# Aider AI Chat
-.aider*
